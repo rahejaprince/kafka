@@ -906,11 +906,7 @@ public class StreamThread extends Thread implements ProcessingThread {
 
         final long pollLatency;
         taskManager.resumePollingForPartitionsWithAvailableSpace();
-        try {
-            pollLatency = pollPhase();
-        } finally {
-            taskManager.updateLags();
-        }
+        pollLatency = pollPhase();
 
         // Shutdown hook could potentially be triggered and transit the thread state to PENDING_SHUTDOWN during #pollRequests().
         // The task manager internal states could be uninitialized if the state transition happens during #onPartitionsAssigned().
@@ -935,6 +931,9 @@ public class StreamThread extends Thread implements ProcessingThread {
         long totalPunctuateLatency = 0L;
         if (state == State.RUNNING
             || (stateUpdaterEnabled && isStartingRunningOrPartitionAssigned())) {
+
+            taskManager.updateLags();
+
             /*
              * Within an iteration, after processing up to N (N initialized as 1 upon start up) records for each applicable tasks, check the current time:
              *  1. If it is time to punctuate, do it;
@@ -1055,11 +1054,7 @@ public class StreamThread extends Thread implements ProcessingThread {
 
         final long pollLatency;
         taskManager.resumePollingForPartitionsWithAvailableSpace();
-        try {
-            pollLatency = pollPhase();
-        } finally {
-            taskManager.updateLags();
-        }
+        pollLatency = pollPhase();
 
         // Shutdown hook could potentially be triggered and transit the thread state to PENDING_SHUTDOWN during #pollRequests().
         // The task manager internal states could be uninitialized if the state transition happens during #onPartitionsAssigned().
@@ -1072,6 +1067,8 @@ public class StreamThread extends Thread implements ProcessingThread {
 
         long totalCommitLatency = 0L;
         if (isRunning()) {
+
+            taskManager.updateLags();
 
             checkStateUpdater();
 
@@ -1604,7 +1601,9 @@ public class StreamThread extends Thread implements ProcessingThread {
         }
 
         if (processingMode.equals(StreamsConfigUtils.ProcessingMode.EXACTLY_ONCE_ALPHA)) {
-            throw new UnsupportedOperationException("not yet implemented");
+            log.error("EOS v1 enabled: Producer client instance IDs are not collected." +
+                " Enable producer logging to retrieve the IDs from the producer logs.");
+            producerInstanceIdFuture.complete(Collections.emptyMap());
         } else {
             if (threadProducerInstanceIdFuture.isDone()) {
                 if (threadProducerInstanceIdFuture.isCompletedExceptionally()) {

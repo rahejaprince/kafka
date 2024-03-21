@@ -3257,6 +3257,8 @@ public class StreamThreadTest {
         thread = setUpThread(streamsConfigProps);
         thread.setState(State.STARTING);
         thread.setState(State.PARTITIONS_ASSIGNED);
+        thread.updateThreadMetadata("metadata");
+        thread.setState(State.RUNNING);
 
         runOnce();
 
@@ -3340,24 +3342,37 @@ public class StreamThreadTest {
 
     @Test
     public void shouldGetProducerInstanceId() throws Exception {
-        getProducerInstanceId(false);
+        getProducerInstanceId(false, false);
     }
 
     @Test
-    public void shouldProducerInstanceIdAndInternalTimeout() throws Exception {
-        getProducerInstanceId(true);
+    public void shouldGetProducerInstanceIdWithInternalTimeout() throws Exception {
+        getProducerInstanceId(true, false);
     }
 
-    private void getProducerInstanceId(final boolean injectTimeException) throws Exception {
+    @Test
+    public void shouldNotGetProducerInstanceIdWithEosV1() throws Exception {
+        getProducerInstanceId(false, true);
+    }
+
+    @SuppressWarnings("deprecation")
+    private void getProducerInstanceId(final boolean injectTimeException,
+                                       final boolean enableEos) throws Exception {
         final Uuid producerInstanceId = Uuid.randomUuid();
         final MockProducer<byte[], byte[]> producer = new MockProducer<>();
-        producer.setClientInstanceId(producerInstanceId);
-        if (injectTimeException) {
-            producer.injectTimeoutException(1);
+        if (!enableEos) {
+            producer.setClientInstanceId(producerInstanceId);
+            if (injectTimeException) {
+                producer.injectTimeoutException(1);
+            }
         }
         clientSupplier.prepareProducer(producer);
 
-        thread = createStreamThread("clientId");
+        final Properties properties = configProps(enableEos);
+        if (enableEos) {
+            properties.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE);
+        }
+        thread = createStreamThread("clientId", new StreamsConfig(properties));
         thread.setState(State.STARTING);
 
         final KafkaFuture<Map<String, KafkaFuture<Uuid>>> producerInstanceIdFutures =
@@ -3366,9 +3381,13 @@ public class StreamThreadTest {
         thread.maybeGetClientInstanceIds(); // triggers internal timeout; should not crash
         thread.maybeGetClientInstanceIds();
 
-        final KafkaFuture<Uuid> producerFuture = producerInstanceIdFutures.get().get("clientId-StreamThread-1-producer");
-        final Uuid producerUuid = producerFuture.get();
-        assertThat(producerUuid, equalTo(producerInstanceId));
+        if (enableEos) {
+            assertThat(producerInstanceIdFutures.get(), equalTo(emptyMap()));
+        } else {
+            final KafkaFuture<Uuid> producerFuture = producerInstanceIdFutures.get().get("clientId-StreamThread-1-producer");
+            final Uuid producerUuid = producerFuture.get();
+            assertThat(producerUuid, equalTo(producerInstanceId));
+        }
     }
 
     @Test

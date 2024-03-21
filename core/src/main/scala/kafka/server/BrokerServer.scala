@@ -140,7 +140,7 @@ class BrokerServer(
 
   var brokerMetadataPublisher: BrokerMetadataPublisher = _
 
-  val brokerFeatures: BrokerFeatures = BrokerFeatures.createDefault()
+  val brokerFeatures: BrokerFeatures = BrokerFeatures.createDefault(config.unstableMetadataVersionsEnabled)
 
   def kafkaYammerMetrics: KafkaYammerMetrics = KafkaYammerMetrics.INSTANCE
 
@@ -452,7 +452,9 @@ class BrokerServer(
           authorizer
         ),
         sharedServer.initialBrokerMetadataLoadFaultHandler,
-        sharedServer.metadataPublishingFaultHandler)
+        sharedServer.metadataPublishingFaultHandler,
+        lifecycleManager
+      )
       metadataPublishers.add(brokerMetadataPublisher)
 
       // Register parts of the broker that can be reconfigured via dynamic configs.  This needs to
@@ -561,11 +563,12 @@ class BrokerServer(
         config.offsetMetadataMaxSize,
         config.groupMaxSize,
         config.groupInitialRebalanceDelay,
-        GroupCoordinatorConfig.GENERIC_GROUP_NEW_MEMBER_JOIN_TIMEOUT_MS,
+        GroupCoordinatorConfig.CLASSIC_GROUP_NEW_MEMBER_JOIN_TIMEOUT_MS,
         config.groupMinSessionTimeoutMs,
         config.groupMaxSessionTimeoutMs,
         config.offsetsRetentionCheckIntervalMs,
-        config.offsetsRetentionMinutes * 60 * 1000L
+        config.offsetsRetentionMinutes * 60 * 1000L,
+        config.offsetCommitTimeoutMs
       )
       val timer = new SystemTimerReaper(
         "group-coordinator-reaper",
