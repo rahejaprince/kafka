@@ -17,6 +17,7 @@
 package org.apache.kafka.clients.consumer.internals;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.IsolationLevel;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.TopicIdPartition;
 import org.apache.kafka.common.Uuid;
@@ -335,6 +336,7 @@ public class ShareFetchCollectorTest {
                     BufferSupplier.create(),
                     topicAPartition0,
                     partitionData,
+                    IsolationLevel.READ_UNCOMMITTED,
                     ApiKeys.SHARE_FETCH.latestVersion());
         }
     }

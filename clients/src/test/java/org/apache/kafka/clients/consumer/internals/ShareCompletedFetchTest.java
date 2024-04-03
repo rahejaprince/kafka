@@ -18,6 +18,7 @@ package org.apache.kafka.clients.consumer.internals;
 
 import org.apache.kafka.clients.consumer.AcknowledgeType;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.IsolationLevel;
 import org.apache.kafka.common.TopicIdPartition;
 import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.message.ShareFetchResponseData;
@@ -263,6 +264,7 @@ public class ShareCompletedFetchTest {
                 BufferSupplier.create(),
                 TIP,
                 partitionData,
+                IsolationLevel.READ_UNCOMMITTED,
                 ApiKeys.SHARE_FETCH.latestVersion());
     }
 

@@ -19,6 +19,7 @@ package kafka.server;
 import org.apache.kafka.common.TopicIdPartition;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
+import org.apache.kafka.common.message.FetchResponseData;
 import org.apache.kafka.common.message.ShareAcknowledgeResponseData;
 import org.apache.kafka.common.message.ShareFetchResponseData;
 import org.apache.kafka.common.protocol.Errors;
@@ -202,6 +203,18 @@ public class SharePartitionManager {
                             .setErrorCode(fetchPartitionData.error.code())
                             .setAcquiredRecords(acquiredRecords)
                             .setAcknowledgeErrorCode(Errors.NONE.code());
+
+                        if (fetchPartitionData.abortedTransactions.isPresent()) {
+                            List<FetchResponseData.AbortedTransaction> fetchedTransactions = fetchPartitionData.abortedTransactions.get();
+                            List<ShareFetchResponseData.AbortedTransaction> abortedTransactions = new ArrayList<>(fetchedTransactions.size());
+                            fetchedTransactions.forEach(fetchedTransaction -> {
+                                ShareFetchResponseData.AbortedTransaction abortedTransaction = new ShareFetchResponseData.AbortedTransaction();
+                                abortedTransaction.setProducerId(fetchedTransaction.producerId());
+                                abortedTransaction.setFirstOffset(fetchedTransaction.firstOffset());
+                                abortedTransactions.add(abortedTransaction);
+                            });
+                            partitionData.setAbortedTransactions(abortedTransactions);
+                        }
                     }
                     result.put(topicIdPartition, partitionData);
                 });

@@ -17,6 +17,7 @@
 package org.apache.kafka.clients.consumer.internals;
 
 import org.apache.kafka.clients.consumer.internals.events.BackgroundEventHandler;
+import org.apache.kafka.common.IsolationLevel;
 import org.apache.kafka.common.TopicIdPartition;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
@@ -207,37 +208,37 @@ public class ShareMembershipManagerTest {
     public void testListenersGetNotifiedOnTransitionsToFatal() {
         ShareMembershipManager membershipManager = createMembershipManagerJoiningGroup();
         subscriptionState.subscribe(Collections.singleton("topic1"), Optional.empty());
-        MemberStateListener listener = mock(MemberStateListener.class);
+        ShareMemberStateListener listener = mock(ShareMemberStateListener.class);
         membershipManager.registerStateListener(listener);
         mockStableMember(membershipManager);
-        verify(listener).onMemberEpochUpdated(Optional.of(MEMBER_EPOCH), Optional.of(MEMBER_ID));
+        verify(listener).onMemberEpochUpdated(Optional.of(MEMBER_EPOCH), Optional.of(MEMBER_ID), Optional.of(IsolationLevel.READ_UNCOMMITTED));
         clearInvocations(listener);
 
         // Transition to FAILED before getting member ID/epoch
         membershipManager.transitionToFatal();
         assertEquals(MemberState.FATAL, membershipManager.state());
-        verify(listener).onMemberEpochUpdated(Optional.empty(), Optional.empty());
+        verify(listener).onMemberEpochUpdated(Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     @Test
     public void testListenersGetNotifiedOnTransitionsToLeavingGroup() {
         ShareMembershipManager membershipManager = createMembershipManagerJoiningGroup();
-        MemberStateListener listener = mock(MemberStateListener.class);
+        ShareMemberStateListener listener = mock(ShareMemberStateListener.class);
         membershipManager.registerStateListener(listener);
         mockStableMember(membershipManager);
-        verify(listener).onMemberEpochUpdated(Optional.of(MEMBER_EPOCH), Optional.of(MEMBER_ID));
+        verify(listener).onMemberEpochUpdated(Optional.of(MEMBER_EPOCH), Optional.of(MEMBER_ID), Optional.of(IsolationLevel.READ_UNCOMMITTED));
         clearInvocations(listener);
 
         mockLeaveGroup();
         membershipManager.leaveGroup();
         assertEquals(MemberState.LEAVING, membershipManager.state());
-        verify(listener).onMemberEpochUpdated(Optional.empty(), Optional.empty());
+        verify(listener).onMemberEpochUpdated(Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     @Test
     public void testListenersGetNotifiedOfMemberEpochUpdatesOnlyIfItChanges() {
         ShareMembershipManager membershipManager = createMembershipManagerJoiningGroup();
-        MemberStateListener listener = mock(MemberStateListener.class);
+        ShareMemberStateListener listener = mock(ShareMemberStateListener.class);
         membershipManager.registerStateListener(listener);
         int epoch = 5;
 
@@ -246,14 +247,14 @@ public class ShareMembershipManagerTest {
                 .setMemberId(MEMBER_ID)
                 .setMemberEpoch(epoch));
 
-        verify(listener).onMemberEpochUpdated(Optional.of(epoch), Optional.of(MEMBER_ID));
+        verify(listener).onMemberEpochUpdated(Optional.of(epoch), Optional.of(MEMBER_ID), Optional.of(IsolationLevel.READ_UNCOMMITTED));
         clearInvocations(listener);
 
         membershipManager.onHeartbeatResponseReceived(new ShareGroupHeartbeatResponseData()
                 .setErrorCode(Errors.NONE.code())
                 .setMemberId(MEMBER_ID)
                 .setMemberEpoch(epoch));
-        verify(listener, never()).onMemberEpochUpdated(any(), any());
+        verify(listener, never()).onMemberEpochUpdated(any(), any(), any());
     }
 
     private void mockStableMember(ShareMembershipManager membershipManager) {

@@ -637,7 +637,7 @@ public class ShareFetchRequestManagerTest {
                                            ShareFetchCollector<K, V> fetchCollector) {
             super(logContext, groupId, metadata, subscriptions, fetchConfig, shareFetchBuffer, metricsManager);
             this.shareFetchCollector = fetchCollector;
-            onMemberEpochUpdated(Optional.empty(), Optional.of(Uuid.randomUuid().toString()));
+            onMemberEpochUpdated(Optional.empty(), Optional.of(Uuid.randomUuid().toString()), Optional.of(IsolationLevel.READ_UNCOMMITTED));
         }
 
         private ShareFetch<K, V> collectFetch() {

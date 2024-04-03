@@ -1314,6 +1314,7 @@ class KafkaApis(val requestChannel: RequestChannel,
             .setErrorCode(Errors.forCode(partitionData.errorCode).code)
             .setRecords(unconvertedRecords)
             .setAcquiredRecords(partitionData.acquiredRecords)
+            .setAbortedTransactions(partitionData.abortedTransactions())
             .setCurrentLeader(partitionData.currentLeader())
     }
 
@@ -1424,7 +1425,7 @@ class KafkaApis(val requestChannel: RequestChannel,
           request.context.listenerName.value))
 
       // Dummy values for replicaId, replicaEpoch, isolationLevel and clientMetadata as they are not used in ShareFetchRequest
-      val params = new FetchParams(
+      var params = new FetchParams(
         versionId,
         FetchRequest.FUTURE_LOCAL_REPLICA_ID,
         -1,
@@ -1434,6 +1435,19 @@ class KafkaApis(val requestChannel: RequestChannel,
         FetchIsolation.HIGH_WATERMARK,
         clientMetadata
       )
+
+      if (groupId.equals("read-committed")) {
+        params = new FetchParams(
+          versionId,
+          FetchRequest.ORDINARY_CONSUMER_ID,
+          -1,
+          shareFetchRequest.maxWait,
+          fetchMinBytes,
+          fetchMaxBytes,
+          FetchIsolation.TXN_COMMITTED,
+          clientMetadata
+        )
+      }
 
       // TODO: We can simplify the code by removing the need for the additional max bytes map. Rather
       // change "interesting" a tuple to contain both the partition data and the max bytes.

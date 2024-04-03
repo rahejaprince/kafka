@@ -24,6 +24,7 @@ import org.apache.kafka.clients.consumer.internals.Utils.TopicIdPartitionCompara
 import org.apache.kafka.clients.consumer.internals.Utils.TopicPartitionComparator;
 import org.apache.kafka.clients.consumer.internals.events.BackgroundEventHandler;
 import org.apache.kafka.clients.consumer.internals.events.ErrorBackgroundEvent;
+import org.apache.kafka.common.IsolationLevel;
 import org.apache.kafka.common.TopicIdPartition;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
@@ -120,6 +121,12 @@ public class ShareMembershipManager implements RequestManager {
     private String memberId = "";
 
     /**
+     * Isolation level of the share group, received in a heartbeat response when joining the
+     * group specified in {@link #groupId}
+     */
+    private IsolationLevel isolationLevel = IsolationLevel.READ_UNCOMMITTED;
+
+    /**
      * Current epoch of the member. It will be set to 0 by the member, and provided to the server
      * on the heartbeat request, to join the group. It will be then maintained by the server,
      * incremented as the member reconciles and acknowledges the assignments it receives. It will
@@ -197,7 +204,7 @@ public class ShareMembershipManager implements RequestManager {
      * values received from the broker, or values cleared due to member leaving the group, getting
      * fenced or failing).
      */
-    private final List<MemberStateListener> stateUpdatesListeners;
+    private final List<ShareMemberStateListener> stateUpdatesListeners;
 
     /**
      * Optional client telemetry reporter which sends client telemetry data to the broker. This
@@ -306,7 +313,7 @@ public class ShareMembershipManager implements RequestManager {
         }
 
         this.memberId = response.memberId();
-        updateMemberEpoch(response.memberEpoch());
+        updateMemberEpoch(response.memberEpoch(), IsolationLevel.forId(response.isolationLevel()));
 
         ShareGroupHeartbeatResponseData.Assignment assignment = response.assignment();
 
@@ -412,7 +419,7 @@ public class ShareMembershipManager implements RequestManager {
         MemberState previousState = state;
         transitionTo(MemberState.FATAL);
         log.error("Member {} with epoch {} transitioned to {} state", memberId, memberEpoch, MemberState.FATAL);
-        notifyEpochChange(Optional.empty(), Optional.empty());
+        notifyEpochChange(Optional.empty(), Optional.empty(), Optional.empty());
 
         if (previousState == MemberState.UNSUBSCRIBED) {
             log.debug("Member {} with epoch {} got fatal error from the broker but it already " +
@@ -546,7 +553,7 @@ public class ShareMembershipManager implements RequestManager {
                     memberId);
             return;
         }
-        updateMemberEpoch(ShareGroupHeartbeatRequest.LEAVE_GROUP_MEMBER_EPOCH);
+        updateMemberEpoch(ShareGroupHeartbeatRequest.LEAVE_GROUP_MEMBER_EPOCH, IsolationLevel.READ_UNCOMMITTED);
         currentAssignment = new HashMap<>();
         transitionTo(MemberState.LEAVING);
     }
@@ -556,8 +563,8 @@ public class ShareMembershipManager implements RequestManager {
      * This also includes the latest member ID in the notification. If the member fails or leaves
      * the group, this will be invoked with empty epoch and member ID.
      */
-    private void notifyEpochChange(Optional<Integer> epoch, Optional<String> memberId) {
-        stateUpdatesListeners.forEach(stateListener -> stateListener.onMemberEpochUpdated(epoch, memberId));
+    private void notifyEpochChange(Optional<Integer> epoch, Optional<String> memberId, Optional<IsolationLevel> isolationLevel) {
+        stateUpdatesListeners.forEach(stateListener -> stateListener.onMemberEpochUpdated(epoch, memberId, isolationLevel));
     }
 
     /**
@@ -956,19 +963,20 @@ public class ShareMembershipManager implements RequestManager {
     }
 
     private void resetEpoch() {
-        updateMemberEpoch(ShareGroupHeartbeatRequest.JOIN_GROUP_MEMBER_EPOCH);
+        updateMemberEpoch(ShareGroupHeartbeatRequest.JOIN_GROUP_MEMBER_EPOCH, IsolationLevel.READ_UNCOMMITTED);
     }
 
-    private void updateMemberEpoch(int newEpoch) {
+    private void updateMemberEpoch(int newEpoch, IsolationLevel newIsolationLevel) {
         boolean newEpochReceived = this.memberEpoch != newEpoch;
         this.memberEpoch = newEpoch;
+        isolationLevel = newIsolationLevel;
         // Simply notify based on epoch change only, given that the member will never receive a
         // new member ID without an epoch (member ID is only assigned when it joins the group).
         if (newEpochReceived) {
             if (memberEpoch > 0) {
-                notifyEpochChange(Optional.of(memberEpoch), Optional.ofNullable(memberId));
+                notifyEpochChange(Optional.of(memberEpoch), Optional.ofNullable(memberId), Optional.of(isolationLevel));
             } else {
-                notifyEpochChange(Optional.empty(), Optional.empty());
+                notifyEpochChange(Optional.empty(), Optional.empty(), Optional.empty());
             }
         }
     }
@@ -1038,7 +1046,7 @@ public class ShareMembershipManager implements RequestManager {
      *
      * @param listener Listener to invoke.
      */
-    public void registerStateListener(MemberStateListener listener) {
+    public void registerStateListener(ShareMemberStateListener listener) {
         if (listener == null) {
             throw new IllegalArgumentException("State updates listener cannot be null");
         }

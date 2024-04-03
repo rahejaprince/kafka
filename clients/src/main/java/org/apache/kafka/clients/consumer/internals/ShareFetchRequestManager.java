@@ -20,6 +20,7 @@ import org.apache.kafka.clients.ClientResponse;
 import org.apache.kafka.clients.consumer.internals.NetworkClientDelegate.PollResult;
 import org.apache.kafka.clients.consumer.internals.NetworkClientDelegate.UnsentRequest;
 import org.apache.kafka.common.Cluster;
+import org.apache.kafka.common.IsolationLevel;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicIdPartition;
 import org.apache.kafka.common.TopicPartition;
@@ -51,7 +52,7 @@ import java.util.stream.Collectors;
  * represent the {@link SubscriptionState#fetchablePartitions(Predicate)} based on the share group
  * consumer's assignment.
  */
-public class ShareFetchRequestManager implements RequestManager, MemberStateListener {
+public class ShareFetchRequestManager implements RequestManager, ShareMemberStateListener {
 
     private final Logger log;
     private final LogContext logContext;
@@ -65,6 +66,7 @@ public class ShareFetchRequestManager implements RequestManager, MemberStateList
     private final FetchMetricsManager metricsManager;
     private final IdempotentCloser idempotentCloser = new IdempotentCloser();
     private Uuid memberId;
+    private IsolationLevel isolationLevel = IsolationLevel.READ_UNCOMMITTED;
 
     ShareFetchRequestManager(final LogContext logContext,
                              final String groupId,
@@ -215,6 +217,7 @@ public class ShareFetchRequestManager implements RequestManager, MemberStateList
                         BufferSupplier.create(),
                         partition,
                         partitionData,
+                        isolationLevel,
                         requestVersion);
                 shareFetchBuffer.add(completedFetch);
                 shareFetchBuffer.handleAcknowledgementResponses(partition, Errors.forCode(partitionData.acknowledgeErrorCode()));
@@ -333,12 +336,15 @@ public class ShareFetchRequestManager implements RequestManager, MemberStateList
     }
 
     @Override
-    public void onMemberEpochUpdated(Optional<Integer> memberEpochOpt, Optional<String> memberIdOpt) {
+    public void onMemberEpochUpdated(Optional<Integer> memberEpochOpt, Optional<String> memberIdOpt, Optional<IsolationLevel> isolationLevelOpt) {
         // Only set the memberID once for now - will handle changes in AKCORE-57
         if (memberId == null) {
             if (memberIdOpt.isPresent()) {
                 memberId = Uuid.fromString(memberIdOpt.get());
             }
+        }
+        if (isolationLevelOpt.isPresent()) {
+            isolationLevel = isolationLevelOpt.get();
         }
     }
 

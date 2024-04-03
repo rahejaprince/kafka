@@ -303,6 +303,53 @@ public class PlaintextShareConsumerTest extends AbstractShareConsumerTest {
 
     @ParameterizedTest(name = TEST_WITH_PARAMETERIZED_QUORUM_NAME)
     @ValueSource(strings = {"kraft+kip932"})
+    public void testReadCommitted(String quorum) throws Exception {
+        ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(tp().topic(), tp().partition(), null, "key".getBytes(), "value".getBytes());
+
+        Properties transactionProducerProps = new Properties();
+        transactionProducerProps.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, "T1");
+        KafkaProducer<byte[], byte[]> transactionalProducer = createProducer(new ByteArraySerializer(), new ByteArraySerializer(), transactionProducerProps);
+        transactionalProducer.initTransactions();
+        transactionalProducer.beginTransaction();
+        RecordMetadata transactional1 = transactionalProducer.send(record).get();
+
+        KafkaProducer<byte[], byte[]> nonTransactionalProducer = createProducer(new ByteArraySerializer(), new ByteArraySerializer(), new Properties());
+        RecordMetadata nonTransactional1 = nonTransactionalProducer.send(record).get();
+
+        transactionalProducer.commitTransaction();
+
+        // Because this record is in a transaction which is aborted, the consumer should not receive it
+        transactionalProducer.beginTransaction();
+        RecordMetadata transactional2 = transactionalProducer.send(record).get();
+        transactionalProducer.abortTransaction();
+
+        RecordMetadata nonTransactional2 = nonTransactionalProducer.send(record).get();
+
+        transactionalProducer.close();
+        nonTransactionalProducer.close();
+
+        Properties props = new Properties();
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "read-committed");
+        KafkaShareConsumer<byte[], byte[]> shareConsumer = createShareConsumer(new ByteArrayDeserializer(), new ByteArrayDeserializer(),
+                props, CollectionConverters.asScala(Collections.<String>emptyList()).toList());
+        shareConsumer.subscribe(Collections.singleton(tp().topic()));
+        ConsumerRecords<byte[], byte[]> records = shareConsumer.poll(Duration.ofMillis(5000000));
+        assertEquals(3, records.count());
+        assertEquals(transactional1.offset(), records.records(tp()).get(0).offset());
+        assertEquals(nonTransactional1.offset(), records.records(tp()).get(1).offset());
+        assertEquals(nonTransactional2.offset(), records.records(tp()).get(2).offset());
+
+        // There will be control records on the topic-partition, so the offsets of the non-control records
+        // are not 0, 1, 2, 3. Just assert that the offset of the final one is not 3.
+        assertNotEquals(3, nonTransactional2.offset());
+
+        records = shareConsumer.poll(Duration.ofMillis(5000));
+        assertEquals(0, records.count());
+        shareConsumer.close();
+    }
+
+    @ParameterizedTest(name = TEST_WITH_PARAMETERIZED_QUORUM_NAME)
+    @ValueSource(strings = {"kraft+kip932"})
     public void testExplicitAcknowledgeSuccess(String quorum) throws Exception {
         ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(tp().topic(), tp().partition(), null, "key".getBytes(), "value".getBytes());
         KafkaProducer<byte[], byte[]> producer = createProducer(new ByteArraySerializer(), new ByteArraySerializer(), new Properties());

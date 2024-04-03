@@ -16,6 +16,7 @@
  */
 package org.apache.kafka.coordinator.group;
 
+import org.apache.kafka.common.IsolationLevel;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.errors.ApiException;
@@ -1574,6 +1575,10 @@ public class GroupMetadataManager {
                 .setMemberId(updatedMember.memberId())
                 .setMemberEpoch(updatedMember.memberEpoch())
                 .setHeartbeatIntervalMs(shareGroupHeartbeatIntervalMs);
+
+        if (groupId.equals("read-committed")) {
+            response.setIsolationLevel(IsolationLevel.READ_COMMITTED.id());
+        }
 
         // The assignment is only provided in the following cases:
         // 1. The member just joined or rejoined to group (epoch equals to zero);

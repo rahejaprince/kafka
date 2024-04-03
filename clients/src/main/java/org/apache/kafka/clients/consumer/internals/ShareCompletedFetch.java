@@ -18,6 +18,7 @@ package org.apache.kafka.clients.consumer.internals;
 
 import org.apache.kafka.clients.consumer.AcknowledgeType;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.IsolationLevel;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.TopicIdPartition;
 import org.apache.kafka.common.errors.CorruptRecordException;
@@ -26,6 +27,7 @@ import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.message.ShareFetchResponseData;
+import org.apache.kafka.common.record.ControlRecordType;
 import org.apache.kafka.common.record.Record;
 import org.apache.kafka.common.record.RecordBatch;
 import org.apache.kafka.common.record.TimestampType;
@@ -39,11 +41,15 @@ import org.slf4j.Logger;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Optional;
+import java.util.PriorityQueue;
+import java.util.Set;
 
 /**
  * {@link ShareCompletedFetch} represents a {@link RecordBatch batch} of {@link Record records}
@@ -56,11 +62,14 @@ public class ShareCompletedFetch {
 
     final TopicIdPartition partition;
     final ShareFetchResponseData.PartitionData partitionData;
+    final IsolationLevel isolationLevel;
     final short requestVersion;
 
     private final Logger log;
     private final BufferSupplier decompressionBufferSupplier;
     private final Iterator<? extends RecordBatch> batches;
+    private final Set<Long> abortedProducerIds;
+    private final PriorityQueue<ShareFetchResponseData.AbortedTransaction> abortedTransactions;
     private RecordBatch currentBatch;
     private Record lastRecord;
     private CloseableIterator<Record> records;
@@ -75,14 +84,18 @@ public class ShareCompletedFetch {
                         final BufferSupplier decompressionBufferSupplier,
                         final TopicIdPartition partition,
                         final ShareFetchResponseData.PartitionData partitionData,
+                        final IsolationLevel isolationLevel,
                         final short requestVersion) {
         this.log = logContext.logger(org.apache.kafka.clients.consumer.internals.ShareCompletedFetch.class);
         this.decompressionBufferSupplier = decompressionBufferSupplier;
         this.partition = partition;
         this.partitionData = partitionData;
+        this.isolationLevel = isolationLevel;
         this.requestVersion = requestVersion;
         this.batches = ShareFetchResponse.recordsOrFail(partitionData).batches().iterator();
         this.acquiredRecordList = buildAcquiredRecordList(partitionData.acquiredRecords());
+        this.abortedProducerIds = new HashSet<>();
+        this.abortedTransactions = abortedTransactions(partitionData);
     }
 
     private List<OffsetAndDeliveryCount> buildAcquiredRecordList(List<ShareFetchResponseData.AcquiredRecords> partitionAcquiredRecords) {
@@ -302,6 +315,20 @@ public class ShareCompletedFetch {
                 currentBatch = batches.next();
                 maybeEnsureValid(currentBatch, checkCrcs);
 
+                if (isolationLevel == IsolationLevel.READ_COMMITTED && currentBatch.hasProducerId()) {
+                    consumeAbortedTransactionsUpTo(currentBatch.lastOffset());
+
+                    long producerId = currentBatch.producerId();
+                    if (containsAbortMarker(currentBatch)) {
+                        abortedProducerIds.remove(producerId);
+                    } else if (isBatchAborted(currentBatch)) {
+                        log.debug("Skipping aborted record batch from partition {} with producerId {} and " +
+                                "offsets {} to {}",
+                                partition, producerId, currentBatch.baseOffset(), currentBatch.lastOffset());
+                        continue;
+                    }
+                }
+
                 records = currentBatch.streamingIterator(decompressionBufferSupplier);
             } else {
                 Record record = records.next();
@@ -346,6 +373,43 @@ public class ShareCompletedFetch {
             records.close();
             records = null;
         }
+    }
+
+    private void consumeAbortedTransactionsUpTo(long offset) {
+        if (abortedTransactions == null)
+            return;
+
+        while (!abortedTransactions.isEmpty() && abortedTransactions.peek().firstOffset() <= offset) {
+            ShareFetchResponseData.AbortedTransaction abortedTransaction = abortedTransactions.poll();
+            abortedProducerIds.add(abortedTransaction.producerId());
+        }
+    }
+
+    private boolean isBatchAborted(RecordBatch batch) {
+        return batch.isTransactional() && abortedProducerIds.contains(batch.producerId());
+    }
+
+    private PriorityQueue<ShareFetchResponseData.AbortedTransaction> abortedTransactions(ShareFetchResponseData.PartitionData partition) {
+        if (partition.abortedTransactions() == null || partition.abortedTransactions().isEmpty())
+            return null;
+
+        PriorityQueue<ShareFetchResponseData.AbortedTransaction> abortedTransactions = new PriorityQueue<>(
+                partition.abortedTransactions().size(), Comparator.comparingLong(ShareFetchResponseData.AbortedTransaction::firstOffset)
+        );
+        abortedTransactions.addAll(partition.abortedTransactions());
+        return abortedTransactions;
+    }
+
+    private boolean containsAbortMarker(RecordBatch batch) {
+        if (!batch.isControlBatch())
+            return false;
+
+        Iterator<Record> batchIterator = batch.iterator();
+        if (!batchIterator.hasNext())
+            return false;
+
+        Record firstRecord = batchIterator.next();
+        return ControlRecordType.ABORT == ControlRecordType.parse(firstRecord.key());
     }
 
     private static class OffsetAndDeliveryCount {
