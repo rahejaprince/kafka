@@ -17,6 +17,11 @@ from paramiko.ssh_exception import NoValidConnectionsError
 
 from kafka_runner.util import ssh, run, SOURCE_INSTALL
 from kafka_runner.util import INSTANCE_TYPE
+from kafka_runner.util import AWS_REGION, AWS_ACCOUNT_ID, AMI
+
+def tags_to_aws_format(tags):
+    kv_format = [f"Key={k},Value={v}" for k,v in tags.items()]
+    return f"{' '.join(kv_format)}"
 
 
 def setup_virtualenv(venv_dir, args):
@@ -33,6 +38,66 @@ def setup_virtualenv(venv_dir, args):
         run(f"virtualenv -p {args.python} {venv_dir}", allow_fail=False)
         run("pip install --upgrade pip setuptools", venv=True, allow_fail=False)
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--aws", action="store_true", help="use commands for running on AWS")
+    parser.add_argument("--image-name", action="store", type=str, default=os.environ.get('IMAGE_NAME'),
+                        help="Name of image to use for virtual machines.")
+    parser.add_argument("--install-type", action="store", default=SOURCE_INSTALL,
+                        help="how Confluent Platform will be installed")
+    parser.add_argument("--instance-name", action="store", default="KAFKA_TEST_JENKINS",
+                        help="Name of AWS instances")
+    parser.add_argument("--worker-instance-type", action="store", default=INSTANCE_TYPE,
+                        help="AWS instance type to be used for worker nodes.")
+    parser.add_argument("--worker-volume-size", action="store", type=int,
+                        default=40, help="Volume size in GB to be used for worker nodes. Min 50GB.")
+    parser.add_argument("--vagrantfile", action="store", default="system-test/resources/scripts/system-tests/kafka-system-test/Vagrantfile.local",
+                        help="specify location of template for Vagrantfile.local")
+    parser.add_argument("--num-workers", action="store", type=int,
+                        default=10, help="number of worker nodes to bring up")
+    parser.add_argument("--enable-pwd-scan", action="store_true",
+                        help="run password scanner with --enable-pwd-scan flag."
+                            "Scan for passwords from constants file in logs ")
+    parser.add_argument("--notify-slack-with-passwords", action="store_true",
+                        help="Notify slack channel with passwords found")
+    parser.add_argument("--results-root", action="store", default="./results", help="direct test output here")
+    parser.add_argument('test_path', metavar='test_path', type=str, nargs='*',
+                        default=["tests/kafkatest/tests/core/security_test.py"],
+                        help="run tests found underneath this directory. "
+                             "This directory is relative to root muckrake directory.")
+    parser.add_argument("--collect-only", action="store_true", help="run ducktape with --collect-only flag")
+    parser.add_argument("--cleanup", action="store", type=parse_bool, default=True,
+                        help="Tear down instances after tests.")
+    parser.add_argument("--repeat", action="store", type=int, default=1,
+                        help="Use this flag to repeat all discovered tests the given number of times.")
+    parser.add_argument("--resource-url", action="store",
+                        help="if using tarball or distro install type, specify URL path to CP tarball or CP distro [deb or rpm]")
+    parser.add_argument("--parallel", action="store_true", help="if true, run tests in parallel")
+    parser.add_argument("--linux-distro", action="store", type=str, default="ubuntu",
+                        help="The linux distro to install on.")
+    parser.add_argument("--sample", action="store", type=int, default=None,
+                        help="The size of a random sample of tests to run")
+    parser.add_argument("--python", action="store", type=str, default="python", help="The python executable to use")
+    parser.add_argument("--build-url", action="store", type=str, default="qe.test.us",
+                        help="The Jenkins Build URL to tag AWS Resources")
+    parser.add_argument("--parameters", action="store", type=str, default=None, help="Override test parameter")
+    parser.add_argument("--spot-instance", action="store_true", help="run as spot instances")
+    parser.add_argument("--spot-price", action="store", type=float, default=0.113, help="maximum price for a spot instance")
+    """
+    parser.add_argument("--ssh-checker", action="store", nargs='+',
+                        default=['muckrake.ssh_checkers.aws_checker.aws_ssh_checker'],
+                        help="full module path of functions to run in the case of an ssh error")
+    """
+    parser.add_argument("--jdk-version", action="store", type=str, default="8",
+                        help="JDK version to install on the nodes."),
+    parser.add_argument("--nightly", action="store_true", default=False, help="Mark this as a nightly run")
+    parser.add_argument("--new-globals", action="store", type=str, default=None, help="Additional global params to be passed in ducktape")
+    parser.add_argument("--arm-image", action="store_true", help="load the ARM based image of specified distro")
+    args, rest = parser.parse_known_args(sys.argv[1:])
+
+    validate_args(args)
+    return args, rest
+
 def validate_args(args):
     if args.install_type != SOURCE_INSTALL:
         assert args.resource_url, "If running a non-source install, a resource url is required."
@@ -47,11 +112,29 @@ def check_resource_url(resource_url):
     return True
 
 def parse_bool(s):
-    return True if s and s.lower() not in ('0', 'f', 'no', 'n', 'false') else False        
+    return True if s and s.lower() not in ('0', 'f', 'no', 'n', 'false') else False   
+
+def image_from(name=None, image_id=None, region_name=AWS_REGION):
+    """Given the image name or id, return a boto3 object corresponding to the image, or None if no such image exists."""
+    if bool(name) == bool(image_id):
+        raise ValueError('image_from requires either name or image_id')
+
+    ec2 = boto3.resource("ec2", region_name=region_name)
+
+    filters = []
+    if image_id:
+        filters.append({'Name': 'image-id', 'Values': [image_id]})
+    if name:
+        filters.append({'Name': 'name', 'Values': [name]})
+
+    return next(iter(ec2.images.filter(Owners=[AWS_ACCOUNT_ID], Filters=filters)), None)
+
+
 
 class kafka_runner:
-    cluster_file_name = f"{muckrake_dir}/tf-cluster.json"
-    tf_variables_file = f"{muckrake_dir}/tf-vars.tfvars.json"
+    kafka_dir=$KAFKA_DIR
+    cluster_file_name = f"{kafka_dir}/tf-cluster.json"
+    tf_variables_file = f"{kafka_dir}/tf-vars.tfvars.json"
 
     def __init__(self, args, venv_dir):
         self.args = args
@@ -119,10 +202,14 @@ class kafka_runner:
             return True
         except NoValidConnectionsError:
             return False
+        
+    def tags_to_aws_format(tags):
+        kv_format = [f"Key={k},Value={v}" for k,v in tags.items()]
+        return f"{' '.join(kv_format)}"
 
     def generate_tf_file(self):
         env = Environment(loader=FileSystemLoader(f'{self.muckrake_dir}/templates'))
-        template = env.get_template('jenkins.tf')
+        template = env.get_template('main.tf')
 
         # this spot instance expiration time.  This is a failsafe, as terraform
         # should cancel the request on a terraform destroy, which occurs on a provission
@@ -139,4 +226,157 @@ class kafka_runner:
             "cflt_managed_by": "iac",
             "cflt_managed_id": "kafka",
             "cflt_service": "kafka"
-        }   
+        }
+        with open(f'{self.muckrake_dir}/jenkins.tf', 'w') as f:
+            f.write(template.render(spot_instance=self.args.spot_instance,
+                                    spot_instance_valid_time=spot_instance_time,
+                                    tags=tags,
+                                    aws_tags=tags_to_aws_format(tags)))
+               
+    def setup_tf_variables(self, ami):
+        vars = {
+            "instance_type": self.args.worker_instance_type,
+            "worker_ami": ami,
+            "num_workers": self.args.num_workers,
+            "deployment": self.args.linux_distro,
+            "public_key": self.public_key,
+            "spot_price": self.args.spot_price
+        }
+
+        with open(self.tf_variables_file, 'w') as f:
+            json.dump(vars, f)
+
+    def provission_terraform(self):
+        self._run_creds(f"terraform --version", print_output=True, allow_fail=False)
+        self._run_creds(f"terraform init", print_output=True, allow_fail=False, venv=False, cwd=self.muckrake_dir)
+        self._run_creds(f"terraform apply -auto-approve -var-file={self.tf_variables_file}", print_output=True, allow_fail=False,
+            venv=False, cwd=self.muckrake_dir)
+
+    def destroy_terraform(self, allow_fail=False):
+        self._run_creds(f"terraform init", print_output=True, allow_fail=True, cwd=self.muckrake_dir)
+
+        self._run_creds(f"terraform destroy -auto-approve -var-file={self.tf_variables_file}", print_output=True,
+            allow_fail=allow_fail, cwd=self.muckrake_dir)
+        
+    def get_vault_secret(self, secret, field):
+        cmd = f". jenkins-common/resources/scripts/get-vault-secret.sh {secret} {field}"
+        return run(cmd, allow_fail=False, print_output=False, return_stdout=True, cwd=self.muckrake_dir)
+    
+def main():
+    args, ducktape_args = parse_args()
+    kafka_dir = $KAFKA_DIR
+    venv_dir = os.path.join(kafka_dir, "venv")
+
+# setup virtualenv directory
+    if os.path.exists(venv_dir):
+        shutil.rmtree(venv_dir, ignore_errors=True)
+        setup_virtualenv(venv_dir, args)
+
+# reset directory containing source code for CP components
+    projects_dir = os.path.join(kafka_dir, "projects")
+    if os.path.exists(projects_dir):
+        shutil.rmtree(projects_dir)
+
+    test_runner = kafka_runner(args, venv_dir)
+    
+        # download projects and install dependencies, but don't build yet (i.e. checkout only)
+    reuse_image = args.aws and args.image_name
+    build_scope = '' if (args.install_type == SOURCE_INSTALL and not reuse_image) else '--kafka-only'
+    build_cmd = "./build.sh --update --checkout-only {}".format(build_scope)
+    run(build_cmd, print_output=True, venv=False, allow_fail=False, cwd=kafka_dir)
+    run(f"{args.python} -m pip install -U -r resources/requirements.txt",
+        print_output=True, venv=True, allow_fail=False, cwd=kafka_dir)
+
+    run(f"{args.python} -m pip install .",
+        print_output=True, venv_dir=venv_dir, venv=True, allow_fail=True,
+        cwd=f"{kafka_dir}/projects/kafka/tests")
+    # override dep versions for muckrake
+    run(f"{args.python} -m pip install -U -r resources/requirements_override.txt",
+        print_output=True, venv=True, allow_fail=True, cwd=kafka_dir)
+
+    exit_status = 0
+
+        # Take down any existing to bring up cluster from scratch
+    test_runner.generate_tf_file()
+    test_runner.setup_tf_variables(image_id)
+    test_runner.destroy_terraform(allow_fail=True)
+
+    cluster_file_name = f"{kafka_dir}/tf-cluster.json"
+
+    if args.aws:
+        # re-source vagrant credentials before bringing up cluster
+        run(f". jenkins-common/resources/scripts/extract-iam-credential.sh; cd {kafka_dir};",
+            print_output=True, allow_fail=False)
+        test_runner.provission_terraform()
+        test_runner.generate_clusterfile()
+    else:
+        run(f"cd {kafka_dir};",
+            print_output=True, allow_fail=False)
+        test_runner.provission_terraform()
+        test_runner.generate_clusterfile()
+    if logging.getLogger().isEnabledFor(logging.DEBUG):
+        with open(f"{kafka_dir}/tf-cluster.json", "r") as f:
+            logging.debug(f'starting with cluster: {f.read()}')
+    test_runner.wait_until_ready()
+    
+    try:
+    # Check that the test path is valid before doing expensive cluster bringup
+    # We still do this after the build step since that's how we get kafka, and our ducktape dependency
+        test_path = " ".join(args.test_path)
+        cmd = f"{args.python} `which ducktape` {test_path} --collect-only"
+        run(cmd, venv=True, venv_dir=venv_dir, print_output=True, allow_fail=False)
+        if args.collect_only:
+            # Nothing more to do
+            logging.info("--collect-only flag used; exiting without running tests")
+            return
+        # Skip build if we are re-using an older image
+        if not reuse_image:
+            # Now build projects - build is very expensive, so postpone actual build until now so we can fail faster if
+            # there is a problem with any of the above steps (which are relatively cheap)
+            build_cmd = f"./build.sh {build_scope}"
+            run(build_cmd, print_output=True, venv=False, allow_fail=False, cwd=kafka_dir)
+
+        
+        
+    # Take down any existing to bring up cluster from scratch
+        test_runner.generate_tf_file()
+        """
+        test_runner.setup_tf_variables(image_id)
+        test_runner.destroy_terraform(allow_fail=True)
+        """
+    
+
+        cluster_file_name = f"{kafka_dir}/tf-cluster.json"    
+        if args.aws:
+            # re-source vagrant credentials before bringing up cluster
+            run(f". jenkins-common/resources/scripts/extract-iam-credential.sh; cd {kafka_dir};",
+                print_output=True, allow_fail=False)
+            test_runner.provission_terraform()
+            test_runner.generate_clusterfile()
+        else:
+            run(f"cd {kafka_dir};",
+                print_output=True, allow_fail=False)
+            test_runner.provission_terraform()
+            test_runner.generate_clusterfile()
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            with open(f"{kafka_dir}/tf-cluster.json", "r") as f:
+                logging.debug(f'starting with cluster: {f.read()}')
+        test_runner.wait_until_ready()
+
+    except Exception as e:
+        logging.warning(e)
+        logging.warning(format_exc())
+        exit_status = 1
+    finally:
+        # Cleanup
+        if not args.collect_only and args.cleanup:
+            logging.info("bringing down terraform cluster...")
+            test_runner.destroy_terraform()
+
+        elif not args.cleanup:
+            logging.warning("--cleanup is false, leaving nodes alive")
+        sys.exit(exit_status)
+
+
+if __name__ == "__main__":
+    main()
