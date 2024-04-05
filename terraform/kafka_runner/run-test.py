@@ -225,7 +225,8 @@ class kafka_runner:
             "cflt_partition": "onprem",
             "cflt_managed_by": "iac",
             "cflt_managed_id": "kafka",
-            "cflt_service": "kafka"
+            "cflt_service": "kafka",
+            "test": "rashiEC2"
         }
         with open(f'{self.muckrake_dir}/jenkins.tf', 'w') as f:
             f.write(template.render(spot_instance=self.args.spot_instance,
