@@ -297,28 +297,6 @@ def main():
 
     exit_status = 0
 
-        # Take down any existing to bring up cluster from scratch
-    test_runner.generate_tf_file()
-    test_runner.setup_tf_variables(image_id)
-    test_runner.destroy_terraform(allow_fail=True)
-
-    cluster_file_name = f"{kafka_dir}/tf-cluster.json"
-
-    if args.aws:
-        # re-source vagrant credentials before bringing up cluster
-        run(f". jenkins-common/resources/scripts/extract-iam-credential.sh; cd {kafka_dir};",
-            print_output=True, allow_fail=False)
-        test_runner.provission_terraform()
-        test_runner.generate_clusterfile()
-    else:
-        run(f"cd {kafka_dir};",
-            print_output=True, allow_fail=False)
-        test_runner.provission_terraform()
-        test_runner.generate_clusterfile()
-    if logging.getLogger().isEnabledFor(logging.DEBUG):
-        with open(f"{kafka_dir}/tf-cluster.json", "r") as f:
-            logging.debug(f'starting with cluster: {f.read()}')
-    test_runner.wait_until_ready()
     
     try:
     # Check that the test path is valid before doing expensive cluster bringup
@@ -368,15 +346,15 @@ def main():
         logging.warning(e)
         logging.warning(format_exc())
         exit_status = 1
-    finally:
-        # Cleanup
-        if not args.collect_only and args.cleanup:
-            logging.info("bringing down terraform cluster...")
-            test_runner.destroy_terraform()
+    # finally:
+    #     # Cleanup
+    #     if not args.collect_only and args.cleanup:
+    #         logging.info("bringing down terraform cluster...")
+    #         test_runner.destroy_terraform()
 
-        elif not args.cleanup:
-            logging.warning("--cleanup is false, leaving nodes alive")
-        sys.exit(exit_status)
+    #     elif not args.cleanup:
+    #         logging.warning("--cleanup is false, leaving nodes alive")
+    #     sys.exit(exit_status)
 
 
 if __name__ == "__main__":
