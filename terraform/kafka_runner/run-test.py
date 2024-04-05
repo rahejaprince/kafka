@@ -16,7 +16,7 @@ from ducktape.utils.util import wait_until
 from paramiko.ssh_exception import NoValidConnectionsError
 
 from kafka_runner.util import ssh, run, SOURCE_INSTALL
-from kafka_runner.util import INSTANCE_TYPE
+from kafka_runner.util import INSTANCE_TYPE,ABS_KAFKA_DIR
 from kafka_runner.util import AWS_REGION, AWS_ACCOUNT_ID, AMI
 
 def tags_to_aws_format(tags):
@@ -265,7 +265,7 @@ class kafka_runner:
     
 def main():
     args, ducktape_args = parse_args()
-    kafka_dir = $KAFKA_DIR
+    kafka_dir = ABS_KAFKA_DIR
     venv_dir = os.path.join(kafka_dir, "venv")
 
 # setup virtualenv directory
@@ -347,7 +347,7 @@ def main():
         """
     
 
-        cluster_file_name = f"{kafka_dir}/tf-cluster.json"    
+        cluster_file_name = f"{ABS_KAFKA_DIR}/tf-cluster.json"    
         if args.aws:
             # re-source vagrant credentials before bringing up cluster
             run(f". jenkins-common/resources/scripts/extract-iam-credential.sh; cd {kafka_dir};",
