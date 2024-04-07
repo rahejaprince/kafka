@@ -1,5 +1,26 @@
 PYTHON=${PYTHON:-python3.7}
 
+function install_terraform {
+# install terraform
+  echo "installing terraform"
+  pushd /tmp
+  if [[ -f 'terraform' ]]; then
+    rm -f 'terraform'
+  fi
+  wget -q https://releases.hashicorp.com/terraform/1.1.3/terraform_1.1.3_linux_amd64.zip
+  unzip -q terraform_1.1.3_linux_amd64.zip
+  rm terraform_1.1.3_linux_amd64.zip
+  popd
+  mkdir bin
+  mv -f /tmp/terraform bin/
+  export PATH=$(pwd)/bin:$PATH
+  echo "terraform in path:"
+  which terraform
+}
+
+install_terraform
+
+
 $PYTHON -m pip install --upgrade pip
 echo "Retriving all the dependencies"
 $PYTHON -m pip install -r $KAFKA_DIR/terraform/resources/requirements.txt
