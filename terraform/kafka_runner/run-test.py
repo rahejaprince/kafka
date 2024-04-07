@@ -12,8 +12,8 @@ from datetime import datetime, timedelta, timezone
 from functools import partial
 from traceback import format_exc
 from jinja2 import Environment, FileSystemLoader
-from ducktape.utils.util import wait_until
-from paramiko.ssh_exception import NoValidConnectionsError
+# from ducktape.utils.util import wait_until
+# from paramiko.ssh_exception import NoValidConnectionsError
 
 from kafka_runner.util import ssh, run, SOURCE_INSTALL
 from kafka_runner.util import INSTANCE_TYPE,ABS_KAFKA_DIR
@@ -196,12 +196,12 @@ class kafka_runner:
             code, _, _ = ssh(host, "[ -f /var/lib/cloud/instance/boot-finished ]")
             return 0 == code
 
-    def check_for_ssh(host):
-        try:
-            ssh(host, "true")
-            return True
-        except NoValidConnectionsError:
-            return False
+    # def check_for_ssh(host):
+    #     try:
+    #         ssh(host, "true")
+    #         return True
+    #     except NoValidConnectionsError:
+    #         return False
         
     def tags_to_aws_format(tags):
         kv_format = [f"Key={k},Value={v}" for k,v in tags.items()]
