@@ -145,7 +145,7 @@ class kafka_runner:
     def terraform_outputs(self):
         if not self._terraform_outputs:
             raw_json = self._run_creds(f"terraform output -json", print_output=True, allow_fail=False,
-                           return_stdout=True, cwd=self.muckrake_dir)
+                           return_stdout=True, cwd=self.kafka_dir)
             self._terraform_outputs = json.loads(raw_json)
         return self._terraform_outputs
      
@@ -208,7 +208,7 @@ class kafka_runner:
         return f"{' '.join(kv_format)}"
 
     def generate_tf_file(self):
-        env = Environment(loader=FileSystemLoader(f'{self.muckrake_dir}/templates'))
+        env = Environment(loader=FileSystemLoader(f'{self.kafka_dir}/templates'))
         template = env.get_template('main.tf')
 
         # this spot instance expiration time.  This is a failsafe, as terraform
@@ -228,7 +228,7 @@ class kafka_runner:
             "cflt_service": "kafka",
             "test": "rashiEC2"
         }
-        with open(f'{self.muckrake_dir}/jenkins.tf', 'w') as f:
+        with open(f'{self.kafka_dir}/main.tf', 'w') as f:
             f.write(template.render(spot_instance=self.args.spot_instance,
                                     spot_instance_valid_time=spot_instance_time,
                                     tags=tags,
@@ -249,19 +249,19 @@ class kafka_runner:
 
     def provission_terraform(self):
         self._run_creds(f"terraform --version", print_output=True, allow_fail=False)
-        self._run_creds(f"terraform init", print_output=True, allow_fail=False, venv=False, cwd=self.muckrake_dir)
+        self._run_creds(f"terraform init", print_output=True, allow_fail=False, venv=False, cwd=self.kafka_dir)
         self._run_creds(f"terraform apply -auto-approve -var-file={self.tf_variables_file}", print_output=True, allow_fail=False,
-            venv=False, cwd=self.muckrake_dir)
+            venv=False, cwd=self.kafka_dir)
 
     def destroy_terraform(self, allow_fail=False):
-        self._run_creds(f"terraform init", print_output=True, allow_fail=True, cwd=self.muckrake_dir)
+        self._run_creds(f"terraform init", print_output=True, allow_fail=True, cwd=self.kafka_dir)
 
         self._run_creds(f"terraform destroy -auto-approve -var-file={self.tf_variables_file}", print_output=True,
-            allow_fail=allow_fail, cwd=self.muckrake_dir)
+            allow_fail=allow_fail, cwd=self.kafka_dir)
         
     def get_vault_secret(self, secret, field):
         cmd = f". jenkins-common/resources/scripts/get-vault-secret.sh {secret} {field}"
-        return run(cmd, allow_fail=False, print_output=False, return_stdout=True, cwd=self.muckrake_dir)
+        return run(cmd, allow_fail=False, print_output=False, return_stdout=True, cwd=self.kafka_dir)
     
 def main():
     args, ducktape_args = parse_args()
