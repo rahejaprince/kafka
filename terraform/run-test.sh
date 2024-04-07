@@ -31,7 +31,7 @@ echo "calling run_test file"
 #packer --version
 
 
-$PYTHON -m terraform.kafka_runner.run_tests ${TEST_PATH=$KAFKA_DIR/tests/kafkatest/tests/core/security_test.py} \
+$PYTHON -m terraform.kafka_runner.run-test ${TEST_PATH=$KAFKA_DIR/tests/kafkatest/tests/core/security_test.py} \
     --aws \
     --num-workers ${NUM_WORKERS:-10} \
     --install-type ${INSTALL_TYPE:-source} \
