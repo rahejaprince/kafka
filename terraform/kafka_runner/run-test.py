@@ -132,7 +132,7 @@ def image_from(name=None, image_id=None, region_name=AWS_REGION):
 
 
 class kafka_runner:
-    kafka_dir=$KAFKA_DIR
+    kafka_dir=ABS_KAFKA_DIR
     cluster_file_name = f"{kafka_dir}/tf-cluster.json"
     tf_variables_file = f"{kafka_dir}/tf-vars.tfvars.json"
 
