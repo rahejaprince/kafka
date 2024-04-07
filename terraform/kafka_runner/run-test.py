@@ -283,8 +283,8 @@ def main():
         # download projects and install dependencies, but don't build yet (i.e. checkout only)
     reuse_image = args.aws and args.image_name
     build_scope = '' if (args.install_type == SOURCE_INSTALL and not reuse_image) else '--kafka-only'
-    build_cmd = "./build.sh --update --checkout-only {}".format(build_scope)
-    run(build_cmd, print_output=True, venv=False, allow_fail=False, cwd=kafka_dir)
+    # build_cmd = "./build.sh --update --checkout-only {}".format(build_scope)
+    # run(build_cmd, print_output=True, venv=False, allow_fail=False, cwd=kafka_dir)
     run(f"{args.python} -m pip install -U -r resources/requirements.txt",
         print_output=True, venv=True, allow_fail=False, cwd=kafka_dir)
 
@@ -309,12 +309,9 @@ def main():
             logging.info("--collect-only flag used; exiting without running tests")
             return
         # Skip build if we are re-using an older image
-        if not reuse_image:
+        # if not reuse_image:
             # Now build projects - build is very expensive, so postpone actual build until now so we can fail faster if
             # there is a problem with any of the above steps (which are relatively cheap)
-            build_cmd = f"./build.sh {build_scope}"
-            run(build_cmd, print_output=True, venv=False, allow_fail=False, cwd=kafka_dir)
-
         
         
     # Take down any existing to bring up cluster from scratch
