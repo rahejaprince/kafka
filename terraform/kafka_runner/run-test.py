@@ -15,9 +15,9 @@ from jinja2 import Environment, FileSystemLoader
 # from ducktape.utils.util import wait_until
 # from paramiko.ssh_exception import NoValidConnectionsError
 
-from kafka_runner.util import ssh, run, SOURCE_INSTALL
-from kafka_runner.util import INSTANCE_TYPE,ABS_KAFKA_DIR
-from kafka_runner.util import AWS_REGION, AWS_ACCOUNT_ID, AMI
+from terraform.kafka_runner.util import ssh, run, SOURCE_INSTALL
+from terraform.kafka_runner.util import INSTANCE_TYPE,ABS_KAFKA_DIR
+from terraform.kafka_runner.util import AWS_REGION, AWS_ACCOUNT_ID, AMI
 
 def tags_to_aws_format(tags):
     kv_format = [f"Key={k},Value={v}" for k,v in tags.items()]
