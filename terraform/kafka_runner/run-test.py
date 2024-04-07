@@ -15,7 +15,7 @@ from jinja2 import Environment, FileSystemLoader
 # from ducktape.utils.util import wait_until
 # from paramiko.ssh_exception import NoValidConnectionsError
 
-from terraform.kafka_runner.util import ssh, run, SOURCE_INSTALL
+from terraform.kafka_runner.util import run, SOURCE_INSTALL
 from terraform.kafka_runner.util import INSTANCE_TYPE,ABS_KAFKA_DIR
 from terraform.kafka_runner.util import AWS_REGION, AWS_ACCOUNT_ID, AMI
 
@@ -149,20 +149,20 @@ class kafka_runner:
             self._terraform_outputs = json.loads(raw_json)
         return self._terraform_outputs
      
-    def update_hosts(self):
-        cmd = "sudo bash -c 'echo \""
+    # def update_hosts(self):
+    #     cmd = "sudo bash -c 'echo \""
 
-        worker_names = self.terraform_outputs['worker-names']["value"]
-        worker_ips = self.terraform_outputs['worker-private-ips']["value"]
+    #     worker_names = self.terraform_outputs['worker-names']["value"]
+    #     worker_ips = self.terraform_outputs['worker-private-ips']["value"]
 
-        for hostname, ip in zip(worker_names, worker_ips):
-            cmd += f"{ip} {hostname} \n"
-        cmd += "\" >> /etc/hosts'"
-        run_cmd = partial(ssh, command=cmd)
+    #     for hostname, ip in zip(worker_names, worker_ips):
+    #         cmd += f"{ip} {hostname} \n"
+    #     cmd += "\" >> /etc/hosts'"
+    #     run_cmd = partial(ssh, command=cmd)
 
-        for host in worker_ips:
-            run_cmd(host)
-        run(cmd, print_output=True, allow_fail=False)
+    #     for host in worker_ips:
+    #         run_cmd(host)
+    #     run(cmd, print_output=True, allow_fail=False)
 
     def generate_clusterfile(self):
         worker_names = self.terraform_outputs['worker-names']["value"]
@@ -191,10 +191,10 @@ class kafka_runner:
         start = time.time()
 
 
-    def check_node_boot_finished(host):
-            # command to check and see if cloud init finished
-            code, _, _ = ssh(host, "[ -f /var/lib/cloud/instance/boot-finished ]")
-            return 0 == code
+    # def check_node_boot_finished(host):
+    #         # command to check and see if cloud init finished
+    #         code, _, _ = ssh(host, "[ -f /var/lib/cloud/instance/boot-finished ]")
+    #         return 0 == code
 
     # def check_for_ssh(host):
     #     try:
