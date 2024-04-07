@@ -140,7 +140,7 @@ class kafka_runner:
         self.args = args
         self._terraform_outputs = None
         self.venv_dir = venv_dir
-        self.public_key = self.get_vault_secret('semaphore-muckrake', 'pub').strip()
+        # self.public_key = self.get_vault_secret('semaphore-muckrake', 'pub').strip()
 
     def terraform_outputs(self):
         if not self._terraform_outputs:
@@ -240,7 +240,7 @@ class kafka_runner:
             "worker_ami": ami,
             "num_workers": self.args.num_workers,
             "deployment": self.args.linux_distro,
-            "public_key": self.public_key,
+            # "public_key": self.public_key,
             "spot_price": self.args.spot_price
         }
 
