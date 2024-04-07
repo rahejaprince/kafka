@@ -20,6 +20,9 @@ function install_terraform {
 
 install_terraform
 
+virtualenv --python=`which $PYTHON` $WORKSPACE/venv
+source $WORKSPACE/venv/bin/activate
+
 
 $PYTHON -m pip install --upgrade pip
 echo "Retriving all the dependencies"
