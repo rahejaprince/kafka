@@ -288,11 +288,11 @@ def main():
     run(f"{args.python} -m pip install -U -r resources/requirements.txt",
         print_output=True, venv=True, allow_fail=False, cwd=kafka_dir)
 
-    run(f"{args.python} -m pip install .",
-        print_output=True, venv_dir=venv_dir, venv=True, allow_fail=True,
-        cwd=f"{kafka_dir}/projects/kafka/tests")
+    # run(f"{args.python} -m pip install .",
+    #     print_output=True, venv_dir=venv_dir, venv=True, allow_fail=True,
+    #     cwd=f"{kafka_dir}/projects/kafka/tests")
     # override dep versions for muckrake
-    run(f"{args.python} -m pip install -U -r resources/requirements_override.txt",
+    run(f"{args.python} -m pip install -U -r resources/requirements.txt",
         print_output=True, venv=True, allow_fail=True, cwd=kafka_dir)
 
     exit_status = 0
