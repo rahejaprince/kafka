@@ -209,6 +209,7 @@ class kafka_runner:
 
     def generate_tf_file(self):
         env = Environment(loader=FileSystemLoader(f'{self.kafka_dir}/templates'))
+        print("creating terraform file")
         template = env.get_template('main.tf')
 
         # this spot instance expiration time.  This is a failsafe, as terraform
@@ -233,6 +234,7 @@ class kafka_runner:
                                     spot_instance_valid_time=spot_instance_time,
                                     tags=tags,
                                     aws_tags=tags_to_aws_format(tags)))
+        print("terraform file created")
                
     def setup_tf_variables(self, ami):
         vars = {
@@ -248,6 +250,7 @@ class kafka_runner:
             json.dump(vars, f)
 
     def provission_terraform(self):
+        print("provisioning tf file")
         self._run_creds(f"terraform --version", print_output=True, allow_fail=False)
         self._run_creds(f"terraform init", print_output=True, allow_fail=False, venv=False, cwd=self.kafka_dir)
         self._run_creds(f"terraform apply -auto-approve -var-file={self.tf_variables_file}", print_output=True, allow_fail=False,
@@ -315,6 +318,7 @@ def main():
         
         
     # Take down any existing to bring up cluster from scratch
+        print("calling generate_tf_file")
         test_runner.generate_tf_file()
         """
         test_runner.setup_tf_variables(image_id)
