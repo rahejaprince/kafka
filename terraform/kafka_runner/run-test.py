@@ -208,7 +208,7 @@ class kafka_runner:
         return f"{' '.join(kv_format)}"
 
     def generate_tf_file(self):
-        env = Environment(loader=FileSystemLoader(f'{self.kafka_dir}/templates'))
+        env = Environment(loader=FileSystemLoader(f'{self.kafka_dir}/terraform'))
         print("creating terraform file")
         template = env.get_template('main.tf')
 
