@@ -5,6 +5,7 @@ import os
 import shutil
 import sys
 import requests
+import subprocess
 
 
 import time
@@ -216,8 +217,13 @@ class kafka_runner:
         else:
             print(f'The file does not exist in the directory.')
 
-        env = Environment(loader=FileSystemLoader(f'{self.kafka_dir}/terraform'))
+        # Execute the ls command to list all files in the directory
+        ls_output = subprocess.run(['ls', f'{self.kafka_dir}'], capture_output=True, text=True)
+        # Print the output of ls command
+        print(ls_output.stdout)
+        
         print("creating terraform file")
+        env = Environment(loader=FileSystemLoader(f'{self.kafka_dir}/terraform'))
         template = env.get_template('main.tf')
 
         # this spot instance expiration time.  This is a failsafe, as terraform
