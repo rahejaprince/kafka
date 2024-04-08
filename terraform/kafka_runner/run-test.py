@@ -208,8 +208,7 @@ class kafka_runner:
         return f"{' '.join(kv_format)}"
 
     def generate_tf_file(self):
-        filename = 'main.tf'
-        file_path = os.path.join(f'{self.kafka_dir}/terraform', main.tf)
+        file_path = os.path.join(f'{self.kafka_dir}/terraform', 'main.tf')
 
         # Check if the file exists
         if os.path.exists(file_path):
@@ -276,6 +275,7 @@ class kafka_runner:
         return run(cmd, allow_fail=False, print_output=False, return_stdout=True, cwd=self.kafka_dir)
     
 def main():
+    logging.basicConfig(format='[%(levelname)s:%(asctime)s]: %(message)s', level=logging.INFO)
     args, ducktape_args = parse_args()
     kafka_dir = ABS_KAFKA_DIR
     venv_dir = os.path.join(kafka_dir, "venv")
