@@ -148,7 +148,7 @@ class kafka_runner:
         # self.public_key = self.get_vault_secret('semaphore-muckrake', 'pub').strip()
 
     def _run_creds(self, cmd, *args, **kwargs):
-        return run(f". jenkins-common/resources/scripts/extract-iam-credential.sh > /dev/null; cd {self.kafka_dir_dir}; {cmd}", *args, **kwargs)
+        return run(f". jenkins-common/resources/scripts/extract-iam-credential.sh > /dev/null; cd {self.kafka_dir}; {cmd}", *args, **kwargs)
 
 
     def terraform_outputs(self):
