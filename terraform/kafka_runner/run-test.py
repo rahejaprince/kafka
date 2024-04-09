@@ -19,6 +19,8 @@ from jinja2 import Environment, FileSystemLoader
 from terraform.kafka_runner.util import run, SOURCE_INSTALL
 from terraform.kafka_runner.util import INSTANCE_TYPE,ABS_KAFKA_DIR
 from terraform.kafka_runner.util import AWS_REGION, AWS_ACCOUNT_ID, AMI
+from terraform.kafka_runner.package_ami import package_worker_ami
+
 
 def tags_to_aws_format(tags):
     kv_format = [f"Key={k},Value={v}" for k,v in tags.items()]
@@ -113,7 +115,9 @@ def check_resource_url(resource_url):
     return True
 
 def parse_bool(s):
-    return True if s and s.lower() not in ('0', 'f', 'no', 'n', 'false') else False   
+    return True if s and s.lower() not in ('0', 'f', 'no', 'n', 'false') else False  
+
+
 
 def image_from(name=None, image_id=None, region_name=AWS_REGION):
     """Given the image name or id, return a boto3 object corresponding to the image, or None if no such image exists."""
@@ -142,6 +146,10 @@ class kafka_runner:
         self._terraform_outputs = None
         self.venv_dir = venv_dir
         # self.public_key = self.get_vault_secret('semaphore-muckrake', 'pub').strip()
+
+    def _run_creds(self, cmd, *args, **kwargs):
+        return run(f". jenkins-common/resources/scripts/extract-iam-credential.sh > /dev/null; cd {self.muckrake_dir}; {cmd}", *args, **kwargs)
+
 
     def terraform_outputs(self):
         if not self._terraform_outputs:
@@ -331,12 +339,36 @@ def main():
             # Now build projects - build is very expensive, so postpone actual build until now so we can fail faster if
             # there is a problem with any of the above steps (which are relatively cheap)
         
+        # image_id = None
+        # if args.aws:
+        #     if args.image_name:
+        #         image = image_from(name=args.image_name)
+        #         if not image:
+        #             raise ValueError(f'{args.image_name} is not a valid AWS image name')
+        #         image_id = image.image_id
+        #     else:
+        #         base_ami = AMI
+        #         ssh_account = 'ubuntu'
+        #     logging.info(f"linux distro input: {args.linux_distro}")
+        #     logging.info(f"base_ami: {base_ami}")
+        #     image_id = package_worker_ami(args.install_type,
+        #                                     args.worker_volume_size,
+        #                                     source_ami=base_ami,
+        #                                     resource_url=args.resource_url,
+        #                                     linux_distro=args.linux_distro,
+        #                                     instance_type=args.worker_instance_type,
+        #                                     ssh_account=ssh_account,
+        #                                     instance_name=args.instance_name,
+        #                                     jdk_version=args.jdk_version,
+        #                                     arm_image=args.arm_image,
+        #                                     nightly_run=str(args.nightly).lower())
+        
         
     # Take down any existing to bring up cluster from scratch
         print("calling generate_tf_file")
         test_runner.generate_tf_file()
-        """
         test_runner.setup_tf_variables(image_id)
+        """
         test_runner.destroy_terraform(allow_fail=True)
         """
     

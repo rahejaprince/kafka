@@ -20,6 +20,8 @@ AWS_REGION = "us-west-1"
 AWS_ACCOUNT_ID = boto3.client('sts', region_name=AWS_REGION).get_caller_identity().get('Account')
 AWS_IAM = boto3.client('sts', region_name=AWS_REGION).get_caller_identity().get('Arn').split("/")[1]
 AMI_NAME_MAX_LENGTH = 128
+WORKER_AMI_NAME = 'kafka-{}'.format(  # E.g. BUILD_TAG = jenkins-system-test-confluent-platform-master-452
+    os.environ['BUILD_TAG'][8:] if 'BUILD_TAG' in os.environ else str(int(time.time())))
 
 AMI= "ami-29ebb519"
 INSTANCE_TYPE= "c4.xlarge"
