@@ -328,46 +328,46 @@ def main():
     # Check that the test path is valid before doing expensive cluster bringup
     # We still do this after the build step since that's how we get kafka, and our ducktape dependency
         test_path = " ".join(args.test_path)
-        cmd = f"{args.python} `which ducktape` {test_path} --collect-only"
-        run(cmd, venv=True, venv_dir=venv_dir, print_output=True, allow_fail=False)
-        if args.collect_only:
-            # Nothing more to do
-            logging.info("--collect-only flag used; exiting without running tests")
-            return
+        # cmd = f"{args.python} `which ducktape` {test_path} --collect-only"
+        # run(cmd, venv=True, venv_dir=venv_dir, print_output=True, allow_fail=False)
+        # if args.collect_only:
+        #     # Nothing more to do
+        #     logging.info("--collect-only flag used; exiting without running tests")
+        #     return
         # Skip build if we are re-using an older image
-        if not reuse_image:
-            build_cmd = f"./build.sh {build_scope}"
-            run(build_cmd, print_output=True, venv=False, allow_fail=False, cwd=kafka_dir)
+        # if not reuse_image:
+        #     build_cmd = f"./build.sh {build_scope}"
+        #     run(build_cmd, print_output=True, venv=False, allow_fail=False, cwd=kafka_dir)
 
-        # image_id = None
-        # if args.aws:
-        #     if args.image_name:
-        #         image = image_from(name=args.image_name)
-        #         if not image:
-        #             raise ValueError(f'{args.image_name} is not a valid AWS image name')
-        #         image_id = image.image_id
-        #     else:
-        #         base_ami = AMI
-        #         ssh_account = 'ubuntu'
-        #     logging.info(f"linux distro input: {args.linux_distro}")
-        #     logging.info(f"base_ami: {base_ami}")
-        #     image_id = package_worker_ami(args.install_type,
-        #                                     args.worker_volume_size,
-        #                                     source_ami=base_ami,
-        #                                     resource_url=args.resource_url,
-        #                                     linux_distro=args.linux_distro,
-        #                                     instance_type=args.worker_instance_type,
-        #                                     ssh_account=ssh_account,
-        #                                     instance_name=args.instance_name,
-        #                                     jdk_version=args.jdk_version,
-        #                                     arm_image=args.arm_image,
-        #                                     nightly_run=str(args.nightly).lower())
+        image_id = None
+        if args.aws:
+            if args.image_name:
+                image = image_from(name=args.image_name)
+                if not image:
+                    raise ValueError(f'{args.image_name} is not a valid AWS image name')
+                image_id = image.image_id
+            else:
+                base_ami = AMI
+                ssh_account = 'ubuntu'
+            logging.info(f"linux distro input: {args.linux_distro}")
+            logging.info(f"base_ami: {base_ami}")
+            image_id = package_worker_ami(args.install_type,
+                                            args.worker_volume_size,
+                                            source_ami=base_ami,
+                                            resource_url=args.resource_url,
+                                            linux_distro=args.linux_distro,
+                                            instance_type=args.worker_instance_type,
+                                            ssh_account=ssh_account,
+                                            instance_name=args.instance_name,
+                                            jdk_version=args.jdk_version,
+                                            arm_image=args.arm_image,
+                                            nightly_run=str(args.nightly).lower())
         
         
     # Take down any existing to bring up cluster from scratch
         print("calling generate_tf_file")
         test_runner.generate_tf_file()
-        # test_runner.setup_tf_variables(image_id)
+        test_runner.setup_tf_variables(image_id)
     
         test_runner.destroy_terraform(allow_fail=True)
         
