@@ -209,13 +209,13 @@ class kafka_runner:
         return f"{' '.join(kv_format)}"
 
     def generate_tf_file(self):
-        file_path = os.path.join(f'{self.kafka_dir}/terraform', 'main.tf')
+        # file_path = os.path.join(f'{self.kafka_dir}/terraform', 'main.tf')
 
-        # Check if the file exists
-        if os.path.exists(file_path):
-            print(f'The file exists in the directory.')
-        else:
-            print(f'The file does not exist in the directory.')
+        # # Check if the file exists
+        # if os.path.exists(file_path):
+        #     print(f'The file exists in the directory.')
+        # else:
+        #     print(f'The file does not exist in the directory.')
 
         # Execute the ls command to list all files in the directory
         ls_output = subprocess.run(['ls', f'{self.kafka_dir}'], capture_output=True, text=True)
