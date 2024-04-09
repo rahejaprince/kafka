@@ -351,25 +351,25 @@ def main():
                 ssh_account = 'ubuntu'
             logging.info(f"linux distro input: {args.linux_distro}")
             logging.info(f"base_ami: {base_ami}")
-            image_id = package_worker_ami(args.install_type,
-                                            args.worker_volume_size,
-                                            source_ami=base_ami,
-                                            resource_url=args.resource_url,
-                                            linux_distro=args.linux_distro,
-                                            instance_type=args.worker_instance_type,
-                                            ssh_account=ssh_account,
-                                            instance_name=args.instance_name,
-                                            jdk_version=args.jdk_version,
-                                            arm_image=args.arm_image,
-                                            nightly_run=str(args.nightly).lower())
+            # image_id = package_worker_ami(args.install_type,
+            #                                 args.worker_volume_size,
+            #                                 source_ami=base_ami,
+            #                                 resource_url=args.resource_url,
+            #                                 linux_distro=args.linux_distro,
+            #                                 instance_type=args.worker_instance_type,
+            #                                 ssh_account=ssh_account,
+            #                                 instance_name=args.instance_name,
+            #                                 jdk_version=args.jdk_version,
+            #                                 arm_image=args.arm_image,
+            #                                 nightly_run=str(args.nightly).lower())
         
         
     # Take down any existing to bring up cluster from scratch
         print("calling generate_tf_file")
         test_runner.generate_tf_file()
-        test_runner.setup_tf_variables(image_id)
+        # test_runner.setup_tf_variables(image_id)
     
-        test_runner.destroy_terraform(allow_fail=True)
+        # test_runner.destroy_terraform(allow_fail=True)
         
     
 
