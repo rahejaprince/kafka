@@ -148,7 +148,7 @@ class kafka_runner:
         # self.public_key = self.get_vault_secret('semaphore-muckrake', 'pub').strip()
 
     def _run_creds(self, cmd, *args, **kwargs):
-        return run(f". jenkins-common/resources/scripts/extract-iam-credential.sh > /dev/null; cd {self.muckrake_dir}; {cmd}", *args, **kwargs)
+        return run(f". jenkins-common/resources/scripts/extract-iam-credential.sh > /dev/null; cd {self.kafka_dir_dir}; {cmd}", *args, **kwargs)
 
 
     def terraform_outputs(self):
@@ -367,7 +367,7 @@ def main():
     # Take down any existing to bring up cluster from scratch
         print("calling generate_tf_file")
         test_runner.generate_tf_file()
-        # test_runner.setup_tf_variables(image_id)
+        test_runner.setup_tf_variables(image_id)
     
         # test_runner.destroy_terraform(allow_fail=True)
         
