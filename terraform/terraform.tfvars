@@ -1,4 +1,4 @@
-ec2_spot_max_price= 0.113
+ec2_spot_max_price= 0.266
 num_workers=10
 ec2_ami= ami-5189a661
 ec2_instance_type= m3.xlarge
