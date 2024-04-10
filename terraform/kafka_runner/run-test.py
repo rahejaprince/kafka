@@ -148,7 +148,7 @@ class kafka_runner:
         # self.public_key = self.get_vault_secret('semaphore-muckrake', 'pub').strip()
 
     def _run_creds(self, cmd, *args, **kwargs):
-        return run(f". shared/assume_aws_role.sh> /dev/null; cd {self.kafka_dir}; {cmd}", *args, **kwargs)
+        return run(f". kafka-overlay/shared/assume_aws_role.sh> /dev/null; cd {self.kafka_dir}; {cmd}", *args, **kwargs)
 
 
     def terraform_outputs(self):
@@ -285,7 +285,7 @@ class kafka_runner:
             allow_fail=allow_fail, cwd=self.kafka_dir)
         
     def get_vault_secret(self, secret, field):
-        cmd = f". jenkins-common/resources/scripts/get-vault-secret.sh {secret} {field}"
+        cmd = f". kafka-overlay/shared/assume_aws_role.sh {secret} {field}"
         return run(cmd, allow_fail=False, print_output=False, return_stdout=True, cwd=self.kafka_dir)
     
 def main():
@@ -376,7 +376,7 @@ def main():
         cluster_file_name = f"{ABS_KAFKA_DIR}/tf-cluster.json"    
         if args.aws:
             # re-source vagrant credentials before bringing up cluster
-            run(f". jenkins-common/resources/scripts/extract-iam-credential.sh; cd {kafka_dir};",
+            run(f". kafka-overlay/shared/assume_aws_role.sh; cd {kafka_dir};",
                 print_output=True, allow_fail=False)
             test_runner.provission_terraform()
             test_runner.generate_clusterfile()
