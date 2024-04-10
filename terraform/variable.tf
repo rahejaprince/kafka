@@ -1,7 +1,7 @@
 variable "ec2_region" {
   type    = string
   description = "EC2 region"
-  default = "us-east-1"
+  default = "us-west-2"
 }
 
 variable "ec2_spot_max_price" {

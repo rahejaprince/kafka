@@ -46,7 +46,7 @@ resource "aws_instance" "worker" {
     key_name = var.aws_keypair_name
     iam_instance_profile = "jenkins-master"
     subnet_id = var.ec2_subnet_id
-    vpc_security_group_ids = [sg-0291bf7b2f81189ee]
+    vpc_security_group_ids = [sg-03364f9fef903b17d]
     associate_public_ip_address = true
   
 }
