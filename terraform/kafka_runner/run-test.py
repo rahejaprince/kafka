@@ -145,7 +145,13 @@ class kafka_runner:
         self.args = args
         self._terraform_outputs = None
         self.venv_dir = venv_dir
-        self.public_key = os.environ[MUCKRAKE_SECRET]
+        self.public_key = self.get_vault_secret('v1/ci/kv/semaphore2/semaphore-muckrake', 'pub').strip()
+
+    def get_vault_secret(self, secret, field):
+        cmd = f". vault-sem-get-secret {secret} {field}"
+        return run(cmd, allow_fail=False, print_output=False, return_stdout=True, cwd=self.muckrake_dir)
+
+
 
     def _run_creds(self, cmd, *args, **kwargs):
         return run(f". assume-iam-role arn:aws:iam::419470726136:role/semaphore-access> /dev/null; cd {self.kafka_dir}; {cmd}", *args, **kwargs)
