@@ -44,7 +44,6 @@ resource "aws_instance" "worker" {
     ami= var.ec2_ami
     instance_type = var.ec2_instance_type
     key_name = var.aws_keypair_name
-    iam_instance_profile = "semaphore-master"
     subnet_id = var.ec2_subnet_id
     vpc_security_group_ids = [sg-03364f9fef903b17d]
     associate_public_ip_address = false

@@ -145,7 +145,7 @@ class kafka_runner:
         self.args = args
         self._terraform_outputs = None
         self.venv_dir = venv_dir
-        self.public_key = self.get_vault_secret('v1/ci/kv/semaphore2/semaphore-muckrake','pub').strip()
+        self.public_key = $(PEM_CONTENT)
 
     def _run_creds(self, cmd, *args, **kwargs):
         return run(f". assume-iam-role arn:aws:iam::419470726136:role/semaphore-access> /dev/null; cd {self.kafka_dir}; {cmd}", *args, **kwargs)
@@ -217,18 +217,6 @@ class kafka_runner:
         return f"{' '.join(kv_format)}"
 
     def generate_tf_file(self):
-        # file_path = os.path.join(f'{self.kafka_dir}/terraform', 'main.tf')
-
-        # # Check if the file exists
-        # if os.path.exists(file_path):
-        #     print(f'The file exists in the directory.')
-        # else:
-        #     print(f'The file does not exist in the directory.')
-
-        # Execute the ls command to list all files in the directory
-        ls_output = subprocess.run(['ls', f'{self.kafka_dir}'], capture_output=True, text=True)
-        # Print the output of ls command
-        print(ls_output.stdout)
         
         print("creating terraform file")
         env = Environment(loader=FileSystemLoader(f'{self.kafka_dir}'))
@@ -284,9 +272,7 @@ class kafka_runner:
         self._run_creds(f"terraform destroy -auto-approve -var-file={self.tf_variables_file}", print_output=True,
             allow_fail=allow_fail, cwd=self.kafka_dir)
         
-    def get_vault_secret(self, secret, field):
-        cmd = f". assume-iam-role arn:aws:iam::419470726136:role/semaphore-access {secret} {field}"
-        return run(cmd, allow_fail=False, print_output=False, return_stdout=True, cwd=self.kafka_dir)
+    
     
 def main():
     logging.basicConfig(format='[%(levelname)s:%(asctime)s]: %(message)s', level=logging.INFO)
