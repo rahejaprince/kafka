@@ -4,7 +4,7 @@ variable "ec2_region" {
   default = "us-west-2"
 }
 
-variable "ec2_spot_max_price" {
+variable "spot_price" {
   type = string
 }
 
@@ -13,12 +13,12 @@ variable "num_workers" {
   description = "number of workers"
 }
 
-variable "ec2_ami" {
+variable "worker_ami" {
   type        = string
   description = "AMI of aws"
 }
 
-variable "ec2_instance_type" {
+variable "instance_type" {
   type        = string
   description = "Instance type of aws"
 }

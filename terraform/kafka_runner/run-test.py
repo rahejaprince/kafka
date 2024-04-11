@@ -85,7 +85,7 @@ def parse_args():
                         help="The Jenkins Build URL to tag AWS Resources")
     parser.add_argument("--parameters", action="store", type=str, default=None, help="Override test parameter")
     parser.add_argument("--spot-instance", action="store_true", help="run as spot instances")
-    parser.add_argument("--spot-price", action="store", type=float, default=0.113, help="maximum price for a spot instance")
+    parser.add_argument("--spot-price", action="store", type=float, default=0.266, help="maximum price for a spot instance")
     """
     parser.add_argument("--ssh-checker", action="store", nargs='+',
                         default=['muckrake.ssh_checkers.aws_checker.aws_ssh_checker'],

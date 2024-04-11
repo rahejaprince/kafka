@@ -32,7 +32,7 @@ data "cloudinit_config" "user_data" {
 
 
 resource "aws_spot_instance_request" "worker" {
-    spot_price = var.ec2_spot_max_price
+    spot_price = var.spot_price
     wait_for_fulfillment = true
     spot_type = "one-time"
     valid_until = "{{ spot_instance_valid_time }}"
@@ -41,11 +41,11 @@ resource "aws_spot_instance_request" "worker" {
 
 resource "aws_instance" "worker" {
     count= var.num_workers
-    ami= var.ec2_ami
-    instance_type = var.ec2_instance_type
-    key_name = var.aws_keypair_name
-    subnet_id = var.ec2_subnet_id
-    vpc_security_group_ids = [sg-03364f9fef903b17d]
+    ami= var.worker_ami
+    instance_type = var.instance_type
+    key_name = "semaphore-muckrake"
+    subnet_id = "subnet-0429253329fde0351"
+    vpc_security_group_ids = ["sg-03364f9fef903b17d"]
     associate_public_ip_address = false
   
 }
