@@ -23,12 +23,6 @@ variable "instance_type" {
   description = "Instance type of aws"
 }
 
-
-variable "ec2_subnet_id" {
-  type = string
-  description = "Subnet ID of aws"
-}
-
 variable "deployment" {
   type        = string
   default     = "ubuntu"
