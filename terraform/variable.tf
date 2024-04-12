@@ -23,10 +23,6 @@ variable "instance_type" {
   description = "Instance type of aws"
 }
 
-variable "aws_keypair_name" {
-  type    = string
-  description = "Key name of aws"
-}
 
 variable "ec2_subnet_id" {
   type = string
