@@ -170,6 +170,7 @@ public class ShareConsumerImpl<K, V> implements ShareConsumer<K, V> {
     private final BackgroundEventProcessor backgroundEventProcessor;
     private final Deserializers<K, V> deserializers;
     private ShareFetch<K, V> currentFetch;
+    private AcknowledgementCommitCallbackHandler acknowledgementCommitCallbackHandler;
 
     private enum AcknowledgementMode {
         /** Acknowledgement mode is not yet known */
@@ -554,7 +555,7 @@ public class ShareConsumerImpl<K, V> implements ShareConsumer<K, V> {
      */
     @Override
     public void setAcknowledgementCommitCallback(final AcknowledgementCommitCallback callback) {
-        throw new UnsupportedOperationException();
+        acknowledgementCommitCallbackHandler = new AcknowledgementCommitCallbackHandler(callback);
     }
 
     /**
@@ -714,7 +715,11 @@ public class ShareConsumerImpl<K, V> implements ShareConsumer<K, V> {
      * topic-partition.
      */
     private Map<TopicIdPartition, Acknowledgements> handleCompletedAcknowledgements() {
-        return fetchBuffer.getCompletedAcknowledgements();
+        Map<TopicIdPartition, Acknowledgements> completedAcks = fetchBuffer.getCompletedAcknowledgements();
+        if (acknowledgementCommitCallbackHandler != null) {
+            acknowledgementCommitCallbackHandler.onComplete(completedAcks);
+        }
+        return completedAcks;
     }
 
     /**
