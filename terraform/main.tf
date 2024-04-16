@@ -38,7 +38,6 @@ resource "aws_spot_instance_request" "worker" {
   spot_type = "one-time"
   valid_until = "{{ spot_instance_valid_time }}"
 }
-{% endif %}
 {% else %}
 resource "aws_instance" "worker" {
 
@@ -55,6 +54,7 @@ resource "aws_instance" "worker" {
     Name = format("muckrake-worker-%d", count.index)
   }
 }
+{% endif %}
 
 {% if spot_instance %}
 resource "null_resource" "spot_instance_tag_command" {
