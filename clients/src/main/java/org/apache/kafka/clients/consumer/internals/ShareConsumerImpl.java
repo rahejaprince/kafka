@@ -555,7 +555,16 @@ public class ShareConsumerImpl<K, V> implements ShareConsumer<K, V> {
      */
     @Override
     public void setAcknowledgementCommitCallback(final AcknowledgementCommitCallback callback) {
-        acknowledgementCommitCallbackHandler = new AcknowledgementCommitCallbackHandler(callback);
+        acquireAndEnsureOpen();
+        try {
+            if (callback != null) {
+                acknowledgementCommitCallbackHandler = new AcknowledgementCommitCallbackHandler(callback);
+            } else {
+                acknowledgementCommitCallbackHandler = null;
+            }
+        } finally {
+            release();
+        }
     }
 
     /**

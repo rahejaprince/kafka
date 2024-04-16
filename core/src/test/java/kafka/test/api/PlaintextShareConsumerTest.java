@@ -201,7 +201,7 @@ public class PlaintextShareConsumerTest extends AbstractShareConsumerTest {
 
     @ParameterizedTest(name = TEST_WITH_PARAMETERIZED_QUORUM_NAME)
     @ValueSource(strings = {"kraft+kip932"})
-    public void testAcknowledgementCommitCallBackInvalidRecordException(String quorum) throws Exception {
+    public void testAcknowledgementCommitCallbackInvalidRecordException(String quorum) throws Exception {
         partitionExceptionMap = new HashMap<>();
         ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(tp().topic(), tp().partition(), null, "key".getBytes(), "value".getBytes());
         KafkaProducer<byte[], byte[]> producer = createProducer(new ByteArraySerializer(), new ByteArraySerializer(), new Properties());
@@ -211,15 +211,15 @@ public class PlaintextShareConsumerTest extends AbstractShareConsumerTest {
         shareConsumer.setAcknowledgementCommitCallback(new TestableAcknowledgeCommitCallBack());
         shareConsumer.subscribe(Collections.singleton(tp().topic()));
 
-        ConsumerRecords<byte[], byte[]> records = shareConsumer.poll(Duration.ofMillis(5000));
+        ConsumerRecords<byte[], byte[]> records = shareConsumer.poll(Duration.ofMillis(2000));
         assertEquals(1, records.count());
         // Waiting until acquisition lock expires.
         Thread.sleep(10000);
         // Now in the second poll, we implicitly acknowledge the record received in the first poll.
         // We get back the acknowledgment error code after the second poll.
-        // When we start the 3rd poll, the acknowledgment commit callback is evoked
-        shareConsumer.poll(Duration.ofMillis(5000));
-        shareConsumer.poll(Duration.ofMillis(5000));
+        // When we start the 3rd poll, the acknowledgment commit callback is invoked.
+        shareConsumer.poll(Duration.ofMillis(2000));
+        shareConsumer.poll(Duration.ofMillis(2000));
         // As we tried to acknowledge a record after acquisition lock expired,
         // we wil get an InvalidRecordStateException.
         assertTrue(partitionExceptionMap.get(tp()) instanceof InvalidRecordStateException);
@@ -228,7 +228,7 @@ public class PlaintextShareConsumerTest extends AbstractShareConsumerTest {
 
     @ParameterizedTest(name = TEST_WITH_PARAMETERIZED_QUORUM_NAME)
     @ValueSource(strings = {"kraft+kip932"})
-    public void testAcknowledgementCommitCallBackNullException(String quorum) throws Exception {
+    public void testAcknowledgementCommitCallbackSuccessfulAcknowledgement(String quorum) throws Exception {
         partitionExceptionMap = new HashMap<>();
         ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(tp().topic(), tp().partition(), null, "key".getBytes(), "value".getBytes());
         KafkaProducer<byte[], byte[]> producer = createProducer(new ByteArraySerializer(), new ByteArraySerializer(), new Properties());
