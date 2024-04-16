@@ -34,7 +34,7 @@ data "cloudinit_config" "user_data" {
 resource "aws_spot_instance_request" "worker" {
   spot_price           = var.spot_price
   wait_for_fulfillment = true
-  launch_group = "{{ tags[JenkinsBuildUrl] }}"
+  //launch_group = "{{ tags[JenkinsBuildUrl] }}"
   spot_type = "one-time"
   valid_until = "{{ spot_instance_valid_time }}"
 }
