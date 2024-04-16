@@ -30,17 +30,40 @@ data "cloudinit_config" "user_data" {
   }
 }
 
+# {% if spot_instance %}
+# resource "aws_spot_instance_request" "worker" {
+#   spot_price           = var.spot_price
+#   wait_for_fulfillment = true
+#   //launch_group = "{{ tags[JenkinsBuildUrl] }}"
+#   spot_type = "one-time"
+#   valid_until = "{{ spot_instance_valid_time }}"
+# }
+# {% else %}
+# resource "aws_instance" "worker" {
+
+#   count= var.num_workers
+#   ami= var.worker_ami
+#   instance_type = var.instance_type
+#   key_name = "semaphore-muckrake"
+#   subnet_id = "subnet-0429253329fde0351"
+#   vpc_security_group_ids = ["sg-03364f9fef903b17d"]
+#   associate_public_ip_address = false
+
+#   user_data = data.cloudinit_config.user_data.rendered
+#   tags = {
+#     Name = format("muckrake-worker-%d", count.index)
+#   }
+# }
+# {% endif %}
+
 {% if spot_instance %}
 resource "aws_spot_instance_request" "worker" {
   spot_price           = var.spot_price
   wait_for_fulfillment = true
-  //launch_group = "{{ tags[JenkinsBuildUrl] }}"
-  spot_type = "one-time"
-  valid_until = "{{ spot_instance_valid_time }}"
-}
-{% else %}
-resource "aws_instance" "worker" {
-
+  //launch_group         = "{{ tags[JenkinsBuildUrl] }}"
+  spot_type            = "one-time"
+  valid_until          = "{{ spot_instance_valid_time }}"
+  
   count= var.num_workers
   ami= var.worker_ami
   instance_type = var.instance_type
@@ -48,13 +71,29 @@ resource "aws_instance" "worker" {
   subnet_id = "subnet-0429253329fde0351"
   vpc_security_group_ids = ["sg-03364f9fef903b17d"]
   associate_public_ip_address = false
-
+  
+  user_data = data.cloudinit_config.user_data.rendered
+  tags = {
+    Name = format("muckrake-worker-%d", count.index)
+  }
+}
+{% else %}
+resource "aws_instance" "worker" {
+  count= var.num_workers
+  ami= var.worker_ami
+  instance_type = var.instance_type
+  key_name = "semaphore-muckrake"
+  subnet_id = "subnet-0429253329fde0351"
+  vpc_security_group_ids = ["sg-03364f9fef903b17d"]
+  associate_public_ip_address = false
+  
   user_data = data.cloudinit_config.user_data.rendered
   tags = {
     Name = format("muckrake-worker-%d", count.index)
   }
 }
 {% endif %}
+
 
 {% if spot_instance %}
 resource "null_resource" "spot_instance_tag_command" {
