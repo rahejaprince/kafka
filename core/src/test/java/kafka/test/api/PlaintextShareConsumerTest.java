@@ -201,53 +201,53 @@ public class PlaintextShareConsumerTest extends AbstractShareConsumerTest {
 
     @ParameterizedTest(name = TEST_WITH_PARAMETERIZED_QUORUM_NAME)
     @ValueSource(strings = {"kraft+kip932"})
-    public void testAcknowledgeCommitCallBackInvalidRecordException(String quorum) throws Exception {
+    public void testAcknowledgementCommitCallBackInvalidRecordException(String quorum) throws Exception {
         partitionExceptionMap = new HashMap<>();
-        ProducerRecord<byte[], byte[]> record1 = new ProducerRecord<>(tp().topic(), tp().partition(), null, "key".getBytes(), "value".getBytes());
+        ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(tp().topic(), tp().partition(), null, "key".getBytes(), "value".getBytes());
         KafkaProducer<byte[], byte[]> producer = createProducer(new ByteArraySerializer(), new ByteArraySerializer(), new Properties());
-        producer.send(record1);
-        KafkaShareConsumer<byte[], byte[]> shareConsumer1 = createShareConsumer(new ByteArrayDeserializer(), new ByteArrayDeserializer(),
+        producer.send(record);
+        KafkaShareConsumer<byte[], byte[]> shareConsumer = createShareConsumer(new ByteArrayDeserializer(), new ByteArrayDeserializer(),
                 new Properties(), CollectionConverters.asScala(Collections.<String>emptyList()).toList());
-        shareConsumer1.setAcknowledgementCommitCallback(new TestableAcknowledgeCommitCallBack());
-        shareConsumer1.subscribe(Collections.singleton(tp().topic()));
+        shareConsumer.setAcknowledgementCommitCallback(new TestableAcknowledgeCommitCallBack());
+        shareConsumer.subscribe(Collections.singleton(tp().topic()));
 
-        ConsumerRecords<byte[], byte[]> records = shareConsumer1.poll(Duration.ofMillis(5000));
+        ConsumerRecords<byte[], byte[]> records = shareConsumer.poll(Duration.ofMillis(5000));
         assertEquals(1, records.count());
         // Waiting until acquisition lock expires.
         Thread.sleep(10000);
         // Now in the second poll, we implicitly acknowledge the record received in the first poll.
         // We get back the acknowledgment error code after the second poll.
         // When we start the 3rd poll, the acknowledgment commit callback is evoked
-        shareConsumer1.poll(Duration.ofMillis(5000));
-        shareConsumer1.poll(Duration.ofMillis(5000));
+        shareConsumer.poll(Duration.ofMillis(5000));
+        shareConsumer.poll(Duration.ofMillis(5000));
         // As we tried to acknowledge a record after acquisition lock expired,
         // we wil get an InvalidRecordStateException.
         assertTrue(partitionExceptionMap.get(tp()) instanceof InvalidRecordStateException);
-        shareConsumer1.close();
+        shareConsumer.close();
     }
 
     @ParameterizedTest(name = TEST_WITH_PARAMETERIZED_QUORUM_NAME)
     @ValueSource(strings = {"kraft+kip932"})
-    public void testAcknowledgeCommitCallBackNullException(String quorum) throws Exception {
+    public void testAcknowledgementCommitCallBackNullException(String quorum) throws Exception {
         partitionExceptionMap = new HashMap<>();
-        ProducerRecord<byte[], byte[]> record1 = new ProducerRecord<>(tp().topic(), tp().partition(), null, "key".getBytes(), "value".getBytes());
+        ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(tp().topic(), tp().partition(), null, "key".getBytes(), "value".getBytes());
         KafkaProducer<byte[], byte[]> producer = createProducer(new ByteArraySerializer(), new ByteArraySerializer(), new Properties());
-        producer.send(record1);
-        KafkaShareConsumer<byte[], byte[]> shareConsumer1 = createShareConsumer(new ByteArrayDeserializer(), new ByteArrayDeserializer(),
+        producer.send(record);
+        KafkaShareConsumer<byte[], byte[]> shareConsumer = createShareConsumer(new ByteArrayDeserializer(), new ByteArrayDeserializer(),
                 new Properties(), CollectionConverters.asScala(Collections.<String>emptyList()).toList());
-        shareConsumer1.setAcknowledgementCommitCallback(new TestableAcknowledgeCommitCallBack());
-        shareConsumer1.subscribe(Collections.singleton(tp().topic()));
+        shareConsumer.setAcknowledgementCommitCallback(new TestableAcknowledgeCommitCallBack());
+        shareConsumer.subscribe(Collections.singleton(tp().topic()));
 
-        ConsumerRecords<byte[], byte[]> records = shareConsumer1.poll(Duration.ofMillis(2000));
+        ConsumerRecords<byte[], byte[]> records = shareConsumer.poll(Duration.ofMillis(2000));
         assertEquals(1, records.count());
         // Now in the second poll, we implicitly acknowledge the record received in the first poll.
         // We get back the acknowledgment error code after the second poll.
         // When we start the 3rd poll, the acknowledgment commit callback is evoked
-        shareConsumer1.poll(Duration.ofMillis(2000));
-        shareConsumer1.poll(Duration.ofMillis(2000));
+        shareConsumer.poll(Duration.ofMillis(2000));
+        shareConsumer.poll(Duration.ofMillis(2000));
         // We expect null exception as the acknowledgment error code is null.
         assertNull(partitionExceptionMap.get(tp()));
-        shareConsumer1.close();
+        shareConsumer.close();
     }
 
     @ParameterizedTest(name = TEST_WITH_PARAMETERIZED_QUORUM_NAME)
