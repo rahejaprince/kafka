@@ -317,11 +317,12 @@ def main():
 
     exit_status = 0
 
-    
+    print("running main avneesh done done oen the requirement_override.txt file")
     try:
     # Check that the test path is valid before doing expensive cluster bringup
     # We still do this after the build step since that's how we get kafka, and our ducktape dependency
         test_path = " ".join(args.test_path)
+        print(test_path);
         # cmd = f"{args.python} `which ducktape` {test_path} --collect-only"
         # run(cmd, venv=True, venv_dir=venv_dir, print_output=True, allow_fail=False)
         # if args.collect_only:
@@ -336,26 +337,29 @@ def main():
         image_id = None
         if args.aws:
             if args.image_name:
+                print("ami name is provided")
                 image = image_from(name=args.image_name)
                 if not image:
                     raise ValueError(f'{args.image_name} is not a valid AWS image name')
                 image_id = image.image_id
             else:
+                print("ami name is not provided")
                 base_ami = AMI
                 ssh_account = 'ubuntu'
             logging.info(f"linux distro input: {args.linux_distro}")
             logging.info(f"base_ami: {base_ami}")
-            image_id = package_worker_ami(args.install_type,
-                                            args.worker_volume_size,
-                                            source_ami=base_ami,
-                                            resource_url=args.resource_url,
-                                            linux_distro=args.linux_distro,
-                                            instance_type=args.worker_instance_type,
-                                            ssh_account=ssh_account,
-                                            instance_name=args.instance_name,
-                                            jdk_version=args.jdk_version,
-                                            arm_image=args.arm_image,
-                                            nightly_run=str(args.nightly).lower())
+            image_id=AMI
+            # image_id = package_worker_ami(args.install_type,
+            #                                 args.worker_volume_size,
+            #                                 source_ami=base_ami,
+            #                                 resource_url=args.resource_url,
+            #                                 linux_distro=args.linux_distro,
+            #                                 instance_type=args.worker_instance_type,
+            #                                 ssh_account=ssh_account,
+            #                                 instance_name=args.instance_name,
+            #                                 jdk_version=args.jdk_version,
+            #                                 arm_image=args.arm_image,
+            #                                 nightly_run=str(args.nightly).lower())
         
         
     # Take down any existing to bring up cluster from scratch
