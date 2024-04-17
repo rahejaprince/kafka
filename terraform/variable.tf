@@ -6,11 +6,13 @@ variable "ec2_region" {
 
 variable "spot_price" {
   type = string
+  default = "0.266"
 }
 
 variable "num_workers" {
   type        = string
   description = "number of workers"
+  default = "10"
 }
 
 variable "worker_ami" {
