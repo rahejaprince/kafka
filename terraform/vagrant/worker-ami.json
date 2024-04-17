@@ -25,9 +25,9 @@
       "ami_name": "{{user `ami_name`}}",
       "tags": {
           "Owner": "tools",
-          "Service": "Muckrake",
+          "Service": "ce-kafka",
           "Type": "Worker",
-          "role": "muckrake-worker",
+          "role": "kafka-worker",
           "Name": "{{user `instance_name`}}",
           "ResourceUrl": "{{user `resource_url`}}",
           "NightlyRun": "{{user `nightly_run`}}",
@@ -38,7 +38,7 @@
       "launch_block_device_mappings": [{
           "device_name": "/dev/sda1",
           "volume_size": "{{user `volume_size`}}",
-          "volume_type": "gp2",
+          "volume_type": "gp3",
           "delete_on_termination": true
       }]
     }],
