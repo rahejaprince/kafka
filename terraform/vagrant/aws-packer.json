@@ -43,7 +43,7 @@
       },
       {
           "type": "file",
-          "source": "vagrant/common-dependencies.sh",
+          "source": "terraform/common-dependencies.sh",
           "destination": "/tmp/common-dependencies.sh"
       },{
           "environment_vars": [
@@ -62,7 +62,7 @@
         "type": "shell",
         "inline": [
           "python3.8 -m pip install -U pip",
-          "python3.8 -m pip install -r requirements.txt --ignore-installed"
+          "python3.814  -m pip install -r requirements.txt --ignore-installed"
         ]
       }
     ]
