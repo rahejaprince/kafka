@@ -277,8 +277,15 @@ class kafka_runner:
     
 def main():
     logging.basicConfig(format='[%(levelname)s:%(asctime)s]: %(message)s', level=logging.INFO)
+    print("running main avneesh")
     args, ducktape_args = parse_args()
     kafka_dir = ABS_KAFKA_DIR
+    print(args)
+    print("**********")
+    print(ducktape_args)
+    print("**********")
+    print(kafka_dir)
+    print("**********")
     venv_dir = os.path.join(kafka_dir, "venv")
 
 # setup virtualenv directory
