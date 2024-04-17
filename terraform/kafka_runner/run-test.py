@@ -238,7 +238,7 @@ class kafka_runner:
             "cflt_managed_by": "iac",
             "cflt_managed_id": "kafka",
             "cflt_service": "kafka",
-            "test": "rashiEC2"
+            "test": "avneeshTerraformEC2"
         }
         with open(f'{self.kafka_dir}/main.tf', 'w') as f:
             f.write(template.render(spot_instance=self.args.spot_instance,
