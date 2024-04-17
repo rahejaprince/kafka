@@ -290,8 +290,12 @@ def main():
 
 # setup virtualenv directory
     if os.path.exists(venv_dir):
+        print("venv directory exists")
+        print(venv_dir)
         shutil.rmtree(venv_dir, ignore_errors=True)
         setup_virtualenv(venv_dir, args)
+    else:
+        print("venv directory does not exists")
 
 # reset directory containing source code for CP components
     projects_dir = os.path.join(kafka_dir, "projects")
@@ -301,8 +305,8 @@ def main():
     test_runner = kafka_runner(args, venv_dir)
     
         # download projects and install dependencies, but don't build yet (i.e. checkout only)
-    reuse_image = args.aws and args.image_name
-    build_scope = '' if (args.install_type == SOURCE_INSTALL and not reuse_image) else '--kafka-only'
+    # reuse_image = args.aws and args.image_name
+    # build_scope = '' if (args.install_type == SOURCE_INSTALL and not reuse_image) else '--kafka-only'
     # build_cmd = "./build.sh --update --checkout-only {}".format(build_scope)
     # run(build_cmd, print_output=True, venv=False, allow_fail=False, cwd=kafka_dir)
     run(f"{args.python} -m pip install -U -r resources/requirements.txt",
@@ -349,6 +353,7 @@ def main():
             logging.info(f"linux distro input: {args.linux_distro}")
             logging.info(f"base_ami: {base_ami}")
             image_id=AMI
+            print("iamge id is ", image_id)
             # image_id = package_worker_ami(args.install_type,
             #                                 args.worker_volume_size,
             #                                 source_ami=base_ami,
