@@ -15,6 +15,6 @@ users:
 
 runcmd:
   - bash /vagrant/vagrant/base-${ deployment }.sh
-  - python3.8 -m pip install -U pip
-  - python3.8 -m pip install -r /terraform/resources/requirements.txt
-  - sudo python3.8 -m pip install awscli
+  - python3.7 -m pip install -U pip
+  - python3.7 -m pip install -r /terraform/resources/requirements.txt
+  - sudo python3.7-m pip install awscli
