@@ -159,20 +159,46 @@ class kafka_runner:
             self._terraform_outputs = json.loads(raw_json)
         return self._terraform_outputs
      
-    # def update_hosts(self):
-    #     cmd = "sudo bash -c 'echo \""
+    def update_hosts(self):
+        cmd = "sudo bash -c 'echo \""
 
-    #     worker_names = self.terraform_outputs['worker-names']["value"]
-    #     worker_ips = self.terraform_outputs['worker-private-ips']["value"]
+        worker_names = self.terraform_outputs['worker-names']["value"]
+        worker_ips = self.terraform_outputs['worker-private-ips']["value"]
 
-    #     for hostname, ip in zip(worker_names, worker_ips):
-    #         cmd += f"{ip} {hostname} \n"
-    #     cmd += "\" >> /etc/hosts'"
-    #     run_cmd = partial(ssh, command=cmd)
+        for hostname, ip in zip(worker_names, worker_ips):
+            cmd += f"{ip} {hostname} \n"
+        cmd += "\" >> /etc/hosts'"
+        run_cmd = partial(ssh, command=cmd)
 
-    #     for host in worker_ips:
-    #         run_cmd(host)
-    #     run(cmd, print_output=True, allow_fail=False)
+        for host in worker_ips:
+            run_cmd(host)
+        run(cmd, print_output=True, allow_fail=False)
+
+    def check_node_boot_finished(host):
+        # command to check and see if cloud init finished
+        code, _, _ = ssh(host, "[ -f /var/lib/cloud/instance/boot-finished ]")
+        return 0 == code
+
+
+    def poll_all_nodes():
+        # check and see if cloud init is done on all nodes
+        unfinished_nodes = [ip for ip in worker_ips if not check_node_boot_finished(ip)]
+        result = len(unfinished_nodes) == 0
+        if not result:
+            time_diff = time.time() - start
+            logging.warning(f"{time_diff}: still waiting for {unfinished_nodes}")
+
+        return result
+
+        wait_until(lambda: all(check_for_ssh(ip) for ip in worker_ips),
+                    timeout, polltime, err_msg="ssh didn't become available")
+
+        self.update_hosts()
+        logging.warning("updated hosts file")
+
+        wait_until(poll_all_nodes, 15 * 60, 2, err_msg="didn't finish cloudinit")
+        logging.info("cloudinit finished on all nodes")
+
 
     def generate_clusterfile(self):
         worker_names = self.terraform_outputs['worker-names']["value"]
@@ -338,17 +364,7 @@ def main():
                 ssh_account = 'ubuntu'
             logging.info(f"linux distro input: {args.linux_distro}")
             logging.info(f"base_ami: {base_ami}")
-            # image_id = package_worker_ami(args.install_type,
-            #                                 args.worker_volume_size,
-            #                                 source_ami=base_ami,
-            #                                 resource_url=args.resource_url,
-            #                                 linux_distro=args.linux_distro,
-            #                                 instance_type=args.worker_instance_type,
-            #                                 ssh_account=ssh_account,
-            #                                 instance_name=args.instance_name,
-            #                                 jdk_version=args.jdk_version,
-            #                                 arm_image=args.arm_image,
-            #                                 nightly_run=str(args.nightly).lower())
+        
         
         
     # Take down any existing to bring up cluster from scratch
