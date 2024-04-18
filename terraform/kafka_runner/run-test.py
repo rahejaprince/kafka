@@ -175,6 +175,7 @@ class kafka_runner:
         run(cmd, print_output=True, allow_fail=False)
 
     def generate_clusterfile(self):
+        print("generating cluster file")
         worker_names = self.terraform_outputs['worker-names']["value"]
         worker_ips = self.terraform_outputs['worker-private-ips']["value"]
 
@@ -299,6 +300,21 @@ def main():
     logging.basicConfig(format='[%(levelname)s:%(asctime)s]: %(message)s', level=logging.INFO)
     args, ducktape_args = parse_args()
     kafka_dir = ABS_KAFKA_DIR
+
+    if args.new_globals is not None:
+        global_val = json.loads(args.new_globals)
+        file_data = open(f'{kafka_dir}/resources/{args.install_type}-globals.json', 'r')
+        globals_dict = json.loads(file_data.read())
+        file_data.close()
+        for key, value in global_val.items():
+            globals_dict[key] = value
+
+        with open(f'{kafka_dir}/resources/{args.install_type}-globals.json', "w") as outfile:
+            json.dump(globals_dict, outfile, indent = 4)
+
+        print(f"New globals passed - {globals_dict}")
+
+    kafka_dir = ABS_KAFKA_DIR
     venv_dir = os.path.join(kafka_dir, "venv")
 
 # setup virtualenv directory
@@ -376,6 +392,7 @@ def main():
             run(f". assume-iam-role arn:aws:iam::419470726136:role/semaphore-access; cd {kafka_dir};",
                 print_output=True, allow_fail=False)
             test_runner.provission_terraform()
+            print("calling function to generate cluster file")
             test_runner.generate_clusterfile()
         else:
             run(f"cd {kafka_dir};",
