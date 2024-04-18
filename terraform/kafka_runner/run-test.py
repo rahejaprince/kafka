@@ -13,10 +13,10 @@ from datetime import datetime, timedelta, timezone
 from functools import partial
 from traceback import format_exc
 from jinja2 import Environment, FileSystemLoader
-# from ducktape.utils.util import wait_until
-# from paramiko.ssh_exception import NoValidConnectionsError
+from ducktape.utils.util import wait_until
+from paramiko.ssh_exception import NoValidConnectionsError
 
-from terraform.kafka_runner.util import run, SOURCE_INSTALL
+from terraform.kafka_runner.util import run, SOURCE_INSTALL,ssh
 from terraform.kafka_runner.util import INSTANCE_TYPE,ABS_KAFKA_DIR
 from terraform.kafka_runner.util import AWS_REGION, AWS_ACCOUNT_ID, AMI
 from terraform.kafka_runner.package_ami import package_worker_ami
@@ -174,32 +174,6 @@ class kafka_runner:
             run_cmd(host)
         run(cmd, print_output=True, allow_fail=False)
 
-    def check_node_boot_finished(host):
-        # command to check and see if cloud init finished
-        code, _, _ = ssh(host, "[ -f /var/lib/cloud/instance/boot-finished ]")
-        return 0 == code
-
-
-    def poll_all_nodes():
-        # check and see if cloud init is done on all nodes
-        unfinished_nodes = [ip for ip in worker_ips if not check_node_boot_finished(ip)]
-        result = len(unfinished_nodes) == 0
-        if not result:
-            time_diff = time.time() - start
-            logging.warning(f"{time_diff}: still waiting for {unfinished_nodes}")
-
-        return result
-
-        wait_until(lambda: all(check_for_ssh(ip) for ip in worker_ips),
-                    timeout, polltime, err_msg="ssh didn't become available")
-
-        self.update_hosts()
-        logging.warning("updated hosts file")
-
-        wait_until(poll_all_nodes, 15 * 60, 2, err_msg="didn't finish cloudinit")
-        logging.info("cloudinit finished on all nodes")
-
-
     def generate_clusterfile(self):
         worker_names = self.terraform_outputs['worker-names']["value"]
         worker_ips = self.terraform_outputs['worker-private-ips']["value"]
@@ -226,19 +200,39 @@ class kafka_runner:
 
         start = time.time()
 
-
-    # def check_node_boot_finished(host):
-    #         # command to check and see if cloud init finished
-    #         code, _, _ = ssh(host, "[ -f /var/lib/cloud/instance/boot-finished ]")
-    #         return 0 == code
-
-    # def check_for_ssh(host):
-    #     try:
-    #         ssh(host, "true")
-    #         return True
-    #     except NoValidConnectionsError:
-    #         return False
+        def check_node_boot_finished(host):
+            # command to check and see if cloud init finished
+            code, _, _ = ssh(host, "[ -f /var/lib/cloud/instance/boot-finished ]")
+            return 0 == code
         
+        def check_for_ssh(host):
+            try:
+                ssh(host, "true")
+                return True
+            except NoValidConnectionsError:
+                return False
+
+
+        def poll_all_nodes():
+            # check and see if cloud init is done on all nodes
+            unfinished_nodes = [ip for ip in worker_ips if not check_node_boot_finished(ip)]
+            result = len(unfinished_nodes) == 0
+            if not result:
+                time_diff = time.time() - start
+                logging.warning(f"{time_diff}: still waiting for {unfinished_nodes}")
+
+            return result
+
+        wait_until(lambda: all(check_for_ssh(ip) for ip in worker_ips),
+                    timeout, polltime, err_msg="ssh didn't become available")
+
+        self.update_hosts()
+        logging.warning("updated hosts file")
+
+        wait_until(poll_all_nodes, 15 * 60, 2, err_msg="didn't finish cloudinit")
+        logging.info("cloudinit finished on all nodes")
+
+
     def tags_to_aws_format(tags):
         kv_format = [f"Key={k},Value={v}" for k,v in tags.items()]
         return f"{' '.join(kv_format)}"

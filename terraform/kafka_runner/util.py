@@ -6,8 +6,8 @@ import subprocess
 from io import StringIO
 import requests
 
-# from paramiko import SSHClient
-# from ducktape.cluster.remoteaccount import IgnoreMissingHostKeyPolicy
+from paramiko import SSHClient
+from ducktape.cluster.remoteaccount import IgnoreMissingHostKeyPolicy
 
 HASH_ALGORITHM = "sha224"
 BASE_KAFKA_DIR = os.path.join(os.path.dirname(__file__), "..")
@@ -37,23 +37,23 @@ WORKER_AMI_JSON = 'vagrant/worker-ami.json'
 ARM_AWS_PACKER_JSON = 'vagrant/arm-aws-packer.json'
 ARM_WORKER_AMI_JSON = 'vagrant/arm-worker-ami.json'
 
-# def ssh(host, command, port=22, username='terraform', password=None, key_file=f'{ABS_KAFKA_DIR}/muckrake.pem'):
-#     client = SSHClient()
-#     client.set_missing_host_key_policy(IgnoreMissingHostKeyPolicy())
+def ssh(host, command, port=22, username='terraform', password=None, key_file=f'{ABS_KAFKA_DIR}/muckrake.pem'):
+    client = SSHClient()
+    client.set_missing_host_key_policy(IgnoreMissingHostKeyPolicy())
 
-#     client.connect(
-#         hostname=host,
-#         port=port,
-#         username=username,
-#         password=password,
-#         key_filename=key_file,
-#         look_for_keys=False)
-#     _stdin, stdout, stderr = client.exec_command(command)
-#     code = stdout.channel.recv_exit_status()
-#     stdout = stdout.read()
-#     stderr = stderr.read()
-#     client.close()
-#     return code, stdout, stderr
+    client.connect(
+        hostname=host,
+        port=port,
+        username=username,
+        password=password,
+        key_filename=key_file,
+        look_for_keys=False)
+    _stdin, stdout, stderr = client.exec_command(command)
+    code = stdout.channel.recv_exit_status()
+    stdout = stdout.read()
+    stderr = stderr.read()
+    client.close()
+    return code, stdout, stderr
 
 def run(cmd, venv=False, venv_dir="venv", print_output=False, allow_fail=True, return_stdout=False, cwd=None):
     if venv:
