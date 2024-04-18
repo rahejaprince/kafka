@@ -66,16 +66,16 @@ resource "null_resource" "spot_instance_tag_command" {
 }
 {% endif %}
 
-output "worker-public-ips" { value = aws_spot_instance_request.worker.*.public_ip }
-output "worker-public-dnss" { value = aws_spot_instance_request.worker.*.public_dns }
-output "worker-private-ips" { value = aws_spot_instance_request.worker.*.private_ip }
-output "worker-private-dnss" { value = aws_spot_instance_request.worker.*.private_dns }
-output "worker-names" { value = aws_spot_instance_request.worker.*.tags.Name }
+# output "worker-public-ips" { value = aws_spot_instance_request.worker.*.public_ip }
+# output "worker-public-dnss" { value = aws_spot_instance_request.worker.*.public_dns }
+# output "worker-private-ips" { value = aws_spot_instance_request.worker.*.private_ip }
+# output "worker-private-dnss" { value = aws_spot_instance_request.worker.*.private_dns }
+# output "worker-names" { value = aws_spot_instance_request.worker.*.tags.Name }
 
-output "worker-public-ips" { value = aws_instance.worker.*.public_ip }
-output "worker-public-dnss" { value = aws_instance.worker.*.public_dns }
-output "worker-private-ips" { value = aws_instance.worker.*.private_ip }
-output "worker-private-dnss" { value = aws_instance.worker.*.private_dns }
-output "worker-names" { value = aws_instance.worker.*.tags.Name }
+# output "worker-public-ips" { value = aws_instance.worker.*.public_ip }
+# output "worker-public-dnss" { value = aws_instance.worker.*.public_dns }
+# output "worker-private-ips" { value = aws_instance.worker.*.private_ip }
+# output "worker-private-dnss" { value = aws_instance.worker.*.private_dns }
+# output "worker-names" { value = aws_instance.worker.*.tags.Name }
 
 
