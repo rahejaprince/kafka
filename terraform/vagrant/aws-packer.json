@@ -43,7 +43,7 @@
       },
       {
           "type": "file",
-          "source": "terraform/common-dependencies.sh",
+          "source": "vagrant/common-dependencies.sh",
           "destination": "/tmp/common-dependencies.sh"
       },{
           "environment_vars": [
