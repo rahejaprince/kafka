@@ -220,7 +220,7 @@ class kafka_runner:
     def generate_tf_file(self):
         
         print("creating terraform file")
-        env = Environment(loader=FileSystemLoader(f'{self.kafka_dir}/terraform'))
+        env = Environment(loader=FileSystemLoader(f'{self.kafka_dir}'))
         template = env.get_template('main.tf')
 
         # this spot instance expiration time.  This is a failsafe, as terraform
