@@ -207,6 +207,7 @@ class kafka_runner:
         
         # Get the path of the $WORKSPACE directory
         workspace_path = os.environ.get('WORKSPACE')
+        print(workspace_path)
 
         # Check if the $WORKSPACE environment variable is set
         if workspace_path:

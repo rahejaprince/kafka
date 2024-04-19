@@ -13,6 +13,8 @@ HASH_ALGORITHM = "sha224"
 BASE_KAFKA_DIR = os.path.join(os.path.dirname(__file__), "..")
 ABS_KAFKA_DIR = os.path.abspath(BASE_KAFKA_DIR)
 
+workspace_path = os.environ.get('WORKSPACE')
+
 
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 
@@ -37,7 +39,7 @@ WORKER_AMI_JSON = 'vagrant/worker-ami.json'
 ARM_AWS_PACKER_JSON = 'vagrant/arm-aws-packer.json'
 ARM_WORKER_AMI_JSON = 'vagrant/arm-worker-ami.json'
 
-def ssh(host, command, port=22, username='terraform', password=None, key_file="$WORKSPACE/semaphore-muckrake.pem"):
+def ssh(host, command, port=22, username='terraform', password=None, key_file="workspace_path/semaphore-muckrake.pem"):
     client = SSHClient()
     client.set_missing_host_key_policy(IgnoreMissingHostKeyPolicy())
 
