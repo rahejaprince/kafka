@@ -210,6 +210,12 @@ class kafka_runner:
         current_directory = os.getcwd()
         print("current_directory: ",current_directory)
 
+        files = os.listdir(current_directory)
+
+        # Print each file in the directory
+        for file in files:
+            print(file)
+
         # Combine the current directory with the filename to get the full file path
         file_path = os.path.join(current_directory, filename)
 
