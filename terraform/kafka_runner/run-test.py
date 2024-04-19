@@ -202,16 +202,24 @@ class kafka_runner:
         worker_ips = terraform_outputs_dict['worker-private-ips']["value"]
 
         start = time.time()
-        print("path of semaphore-muckrake.pem")
-        directory_path = '$WORKSPACE'
 
-        # Get the list of files in the directory
-        files = os.listdir(directory_path)
-
-        # Print each file in the directory
-        for file in files:
-            print(file)
+        print("path of WORKSPACE DIRECTORY")
         
+        # Get the path of the $WORKSPACE directory
+        workspace_path = os.environ.get('WORKSPACE')
+
+        # Check if the $WORKSPACE environment variable is set
+        if workspace_path:
+            # List all files and directories in the $WORKSPACE directory
+            files_and_dirs = os.listdir(workspace_path)
+
+            # Print the list of files
+            print("Files in $WORKSPACE directory:")
+            for item in files_and_dirs:
+                if os.path.isfile(os.path.join(workspace_path, item)):
+                    print(item)
+        else:
+            print("$WORKSPACE environment variable is not set.")
 
         
         def check_node_boot_finished(host):
