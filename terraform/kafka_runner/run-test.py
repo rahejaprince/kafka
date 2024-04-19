@@ -203,20 +203,17 @@ class kafka_runner:
 
         start = time.time()
         print("path of semaphore-muckrake.pem")
+        directory_path = 'kafka_dir'
+
+        # Get the list of files in the directory
+        files = os.listdir(directory_path)
+
+        # Print each file in the directory
+        for file in files:
+            print(file)
         
 
-        def find_file(root_dir, file_name):
-            for root, dirs, files in os.walk(root_dir):
-                if file_name in files:
-                    return os.path.join(root, file_name)
-            return None
-
-        file_path = find_file('$WORKSPACE', 'semaphore-muckrake.pem')
-        if file_path:
-            print("File found at:", file_path)
-        else:
-            print("File not found.")
-
+        
         def check_node_boot_finished(host):
             # command to check and see if cloud init finished
             code, _, _ = ssh(host, "[ -f /var/lib/cloud/instance/boot-finished ]")
