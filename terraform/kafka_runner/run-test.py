@@ -202,6 +202,19 @@ class kafka_runner:
         worker_ips = terraform_outputs_dict['worker-private-ips']["value"]
 
         start = time.time()
+        print("path of semaphore-muckrake.pem")
+        # Specify the filename
+        filename = 'semaphore-muckrake.pem'
+
+        # Get the current working directory
+        current_directory = os.getcwd()
+        print("current_directory: ",current_directory)
+
+        # Combine the current directory with the filename to get the full file path
+        file_path = os.path.join(current_directory, filename)
+
+        # Print the file path
+        print("File path:", file_path)
 
         def check_node_boot_finished(host):
             # command to check and see if cloud init finished
