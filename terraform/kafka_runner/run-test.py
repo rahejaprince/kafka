@@ -203,7 +203,7 @@ class kafka_runner:
 
         start = time.time()
         print("path of semaphore-muckrake.pem")
-        directory_path = 'kafka_dir'
+        directory_path = '$WORKSPACE'
 
         # Get the list of files in the directory
         files = os.listdir(directory_path)
