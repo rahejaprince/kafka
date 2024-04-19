@@ -161,9 +161,9 @@ class kafka_runner:
      
     def update_hosts(self):
         cmd = "sudo bash -c 'echo \""
-
-        worker_names = self.terraform_outputs['worker-names']["value"]
-        worker_ips = self.terraform_outputs['worker-private-ips']["value"]
+        terraform_outputs_dict = self.terraform_outputs()
+        worker_names = terraform_outputs_dict['worker-names']["value"]
+        worker_ips = terraform_outputs_dict['worker-private-ips']["value"]
 
         for hostname, ip in zip(worker_names, worker_ips):
             cmd += f"{ip} {hostname} \n"
@@ -176,8 +176,9 @@ class kafka_runner:
 
     def generate_clusterfile(self):
         print("generating cluster file")
-        worker_names = self.terraform_outputs['worker-names']["value"]
-        worker_ips = self.terraform_outputs['worker-private-ips']["value"]
+        terraform_outputs_dict = self.terraform_outputs()
+        worker_names = terraform_outputs_dict['worker-names']["value"]
+        worker_ips = terraform_outputs_dict['worker-private-ips']["value"]
 
         nodes = []
 
@@ -197,7 +198,8 @@ class kafka_runner:
             json.dump({"nodes": nodes}, f)
 
     def wait_until_ready(self, timeout=120, polltime=2):
-        worker_ips = self.terraform_outputs['worker-private-ips']["value"]
+        terraform_outputs_dict = self.terraform_outputs()
+        worker_ips = terraform_outputs_dict['worker-private-ips']["value"]
 
         start = time.time()
 
@@ -329,7 +331,7 @@ def main():
 
     test_runner = kafka_runner(args, venv_dir)
     
-        # download projects and install dependencies, but don't build yet (i.e. checkout only)
+    # download projects and install dependencies, but don't build yet (i.e. checkout only)
     reuse_image = args.aws and args.image_name
     build_scope = '' if (args.install_type == SOURCE_INSTALL and not reuse_image) else '--kafka-only'
     # build_cmd = "./build.sh --update --checkout-only {}".format(build_scope)
