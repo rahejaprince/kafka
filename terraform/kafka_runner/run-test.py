@@ -430,15 +430,15 @@ def main():
         logging.warning(e)
         logging.warning(format_exc())
         exit_status = 1
-    finally:
-        # Cleanup
-        if not args.collect_only and args.cleanup:
-            logging.info("bringing down terraform cluster...")
-            test_runner.destroy_terraform()
+    # finally:
+    #     # Cleanup
+    #     if not args.collect_only and args.cleanup:
+    #         logging.info("bringing down terraform cluster...")
+    #         test_runner.destroy_terraform()
 
-        elif not args.cleanup:
-            logging.warning("--cleanup is false, leaving nodes alive")
-        sys.exit(exit_status)
+    #     elif not args.cleanup:
+    #         logging.warning("--cleanup is false, leaving nodes alive")
+    #     sys.exit(exit_status)
 
 
 if __name__ == "__main__":
