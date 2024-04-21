@@ -55,7 +55,7 @@ resource "aws_instance" "worker" {
     ducktape: "true",
     Owner = "ce-kafka",
     role = "ce-kafka",
-    JenkinsBuildUrl = self.args.build_url,
+    //JenkinsBuildUrl = self.args.build_url,
     cflt_environment = "devel",
     cflt_partition = "onprem",
     cflt_managed_by = "iac",
