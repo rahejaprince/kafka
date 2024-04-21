@@ -81,7 +81,7 @@ def parse_args():
     parser.add_argument("--sample", action="store", type=int, default=None,
                         help="The size of a random sample of tests to run")
     parser.add_argument("--python", action="store", type=str, default="python", help="The python executable to use")
-    parser.add_argument("--build-url", action="store", type=str, default="qe.test.us",
+    parser.add_argument("--build-url", action="store", type=str, default="kafka.test.us",
                         help="The Jenkins Build URL to tag AWS Resources")
     parser.add_argument("--parameters", action="store", type=str, default=None, help="Override test parameter")
     parser.add_argument("--spot-instance", action="store_true", help="run as spot instances")
