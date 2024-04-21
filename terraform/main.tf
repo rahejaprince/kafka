@@ -51,7 +51,8 @@ resource "aws_instance" "worker" {
 
   user_data = data.cloudinit_config.user_data.rendered
   tags = {
-    Name = format("muckrake-worker-%d", count.index)
+    Name = format("kafka-worker-%d", count.index)
+    
   }
 }
 

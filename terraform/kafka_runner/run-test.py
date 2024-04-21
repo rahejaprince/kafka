@@ -273,6 +273,7 @@ class kafka_runner:
         spot_instance_time = spot_instance_time.isoformat()
         tags = {
             "Name": "kafka-worker",
+            "ducktape": "true",
             "Owner": "ce-kafka",
             "role": "ce-kafka",
             "JenkinsBuildUrl": self.args.build_url,
@@ -403,8 +404,7 @@ def main():
         print("calling generate_tf_file")
         test_runner.generate_tf_file()
         test_runner.setup_tf_variables(base_ami)
-    
-        # test_runner.destroy_terraform(allow_fail=True)
+        test_runner.destroy_terraform(allow_fail=True)
         
     
 
