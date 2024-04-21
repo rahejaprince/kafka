@@ -33,3 +33,7 @@ variable "public_key" {
   type        = string
   description = "muckrake pem file public key"
 }
+
+variable "build_url" {
+  type = string
+}
