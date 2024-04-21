@@ -52,6 +52,16 @@ resource "aws_instance" "worker" {
   user_data = data.cloudinit_config.user_data.rendered
   tags = {
     Name = format("kafka-worker-%d", count.index)
+    ducktape: "true",
+    Owner = "ce-kafka",
+    role = "ce-kafka",
+    JenkinsBuildUrl = self.args.build_url,
+    cflt_environment = "devel",
+    cflt_partition = "onprem",
+    cflt_managed_by = "iac",
+    cflt_managed_id = "kafka",
+    cflt_service = "kafka",
+    test = "rashiEC2"
     
   }
 }
