@@ -298,7 +298,9 @@ class kafka_runner:
             "num_workers": self.args.num_workers,
             "deployment": self.args.linux_distro,
             "public_key": self.public_key,
-            "spot_price": self.args.spot_price
+            "spot_price": self.args.spot_price,
+            "build_url": self.args.build_url
+            
         }
 
         with open(self.tf_variables_file, 'w') as f:
