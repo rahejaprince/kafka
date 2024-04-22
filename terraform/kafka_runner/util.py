@@ -39,7 +39,7 @@ WORKER_AMI_JSON = 'vagrant/worker-ami.json'
 ARM_AWS_PACKER_JSON = 'vagrant/arm-aws-packer.json'
 ARM_WORKER_AMI_JSON = 'vagrant/arm-worker-ami.json'
 
-def ssh(host, command, port=22, username='terraform', password=None, key_file='os.environ.get('WORKSPACE')/semaphore-muckrake.pem'):
+def ssh(host, command, port=22, username='terraform', password=None, key_file='os.path.join(os.environ.get('WORKSPACE'), 'semaphore-muckrake.pem)'):
     client = SSHClient()
     client.set_missing_host_key_policy(IgnoreMissingHostKeyPolicy())
 
