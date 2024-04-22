@@ -36,4 +36,5 @@ variable "public_key" {
 
 variable "build_url" {
   type = string
+  default = "qe.test.us"
 }

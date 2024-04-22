@@ -323,8 +323,6 @@ def main():
     logging.basicConfig(format='[%(levelname)s:%(asctime)s]: %(message)s', level=logging.INFO)
     args, ducktape_args = parse_args()
     kafka_dir = ABS_KAFKA_DIR
-    build_url= args.build_url
-    print(build_url)
 
 
     if args.new_globals is not None:
