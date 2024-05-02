@@ -21,8 +21,7 @@ blocks:
       jobs:
         - name: Test
           commands:
-            - <your commands>
-            - ...
+            - ls
       epilogue:
         # only needed if your job is java based
         always:
