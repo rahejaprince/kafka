@@ -16,12 +16,13 @@ global_job_config:
     commands:
       - checkout
 blocks:
-  - name: Test
+  - name: Run tests
     task:
       jobs:
         - name: Test
           commands:
-            - ls
+            - echo Running unit and integration tests
+            - ./gradlew unitTest integrationTest --no-daemon --stacktrace --continue -PtestLoggingEvents=started,passed,skipped,failed -PmaxParallelForks=4 -PignoreFailures=true -PmaxTestRetries=1 -PmaxTestRetryFailures=5
       epilogue:
         # only needed if your job is java based
         always:
