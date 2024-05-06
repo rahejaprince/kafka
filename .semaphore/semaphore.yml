@@ -7,7 +7,7 @@ fail_fast:
   cancel:
     when: "true"
 execution_time_limit:
-  hours: 1
+  hours: 3
 queue:
   - when: "branch != 'master' and branch !~ '[0-9]+\\.[0-9]+\\.x'"
     processing: parallel
@@ -21,6 +21,10 @@ blocks:
       jobs:
         - name: Test
           commands:
+            - echo Check compilation compatibility with Scala 2.12
+            - ./retry_zinc ./gradlew clean build -x test --no-daemon --stacktrace -PxmlSpotBugsReport=true -PscalaVersion=2.12
+            - echo Compile and validate
+            - ./retry_zinc ./gradlew clean publishToMavenLocal build -x test --no-daemon --stacktrace -PxmlSpotBugsReport=true
             - echo Running unit and integration tests
             - ./gradlew unitTest integrationTest --no-daemon --stacktrace --continue -PtestLoggingEvents=started,passed,skipped,failed -PmaxParallelForks=4 -PignoreFailures=true -PmaxTestRetries=1 -PmaxTestRetryFailures=5
       epilogue:
