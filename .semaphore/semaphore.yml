@@ -37,7 +37,7 @@ blocks:
         - name: Build
           commands:
             - echo triggering downstream builds
-            - sem-trigger -p common -b 5.3.x -f .semaphore/semaphore.yml
+            - sem-trigger -p common -b master -f .semaphore/semaphore.yml
         # - name: Test
         #   commands:
         #     - echo Check compilation compatibility with Scala 2.12
