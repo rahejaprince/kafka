@@ -36,8 +36,8 @@ blocks:
       jobs:
         - name: Build
           commands:
-            - echo triggering downstream builds
-            - sem-trigger -p common -b master -f .semaphore/semaphore.yml
+            - export version=$(./gradlew properties --no-daemon --console=plain -q | grep \"^version:\" | awk \'{printf \$2}\')
+            - echo $version
         # - name: Test
         #   commands:
         #     - echo Check compilation compatibility with Scala 2.12
