@@ -36,8 +36,14 @@ blocks:
       jobs:
         - name: Build
           commands:
-            - export version=$(./gradlew properties --no-daemon --console=plain -q | grep "^version:" | awk '{printf $2}')
+            - repoName=kafka
+            - version=$(./gradlew properties --no-daemon --console=plain -q | grep "^version:" | awk '{printf $2}')
+            - version1=$(echo $version | cut -d "-" -f 1)
+            - version3=$(echo $version | cut -d "-" -f 3)
+            - version=${version1}-${version3}
             - echo $version
+            - curl -f https://dependency-mgmt.tools.confluent-internal.io/v1/downstream_repos/all/${repoName}/${version} > downstream.json
+            - cat downstream.json
         # - name: Test
         #   commands:
         #     - echo Check compilation compatibility with Scala 2.12
