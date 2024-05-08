@@ -34,30 +34,19 @@ blocks:
   - name: Run tests
     task:
       jobs:
-        - name: Build
+        - name: Test
           commands:
-            - repoName=kafka
-            - version=$(./gradlew properties --no-daemon --console=plain -q | grep "^version:" | awk '{printf $2}')
-            - version1=$(echo $version | cut -d "-" -f 1)
-            - version3=$(echo $version | cut -d "-" -f 3)
-            - version=${version1}-${version3}
-            - echo $version
-            - curl -f https://dependency-mgmt.tools.confluent-internal.io/v1/downstream_repos/all/${repoName}/${version} > downstream.json
-            - cat downstream.json
-        # - name: Test
-        #   commands:
-        #     - echo Check compilation compatibility with Scala 2.12
-        #     - ./retry_zinc ./gradlew clean build -x test --no-daemon --stacktrace -PxmlSpotBugsReport=true -PscalaVersion=2.12
-        #     - echo Compile and validate
-        #     - ./retry_zinc ./gradlew clean publishToMavenLocal build -x test --no-daemon --stacktrace -PxmlSpotBugsReport=true
-        #     - echo Running unit and integration tests
-        #     - ./gradlew unitTest integrationTest --no-daemon --stacktrace --continue -PtestLoggingEvents=started,passed,skipped,failed -PmaxParallelForks=4 -PignoreFailures=true -PmaxTestRetries=1 -PmaxTestRetryFailures=5
+            - echo Check compilation compatibility with Scala 2.12
+            - ./retry_zinc ./gradlew clean build -x test --no-daemon --stacktrace -PxmlSpotBugsReport=true -PscalaVersion=2.12
+            - echo Compile and validate
+            - ./retry_zinc ./gradlew clean publishToMavenLocal build -x test --no-daemon --stacktrace -PxmlSpotBugsReport=true
+            - echo Running unit and integration tests
+            - ./gradlew unitTest integrationTest --no-daemon --stacktrace --continue -PtestLoggingEvents=started,passed,skipped,failed -PmaxParallelForks=4 -PignoreFailures=true -PmaxTestRetries=1 -PmaxTestRetryFailures=5
       epilogue:
         # only needed if your job is java based
         always:
           commands:
-            - . publish-test-results
-            - artifact push workflow target/test-results
+            - shopt -s globstar && test-results publish --name gradle-x86 --trim-output-to 1024 --omit-output-for-passed **/build/test-results/**/TEST-*.xml
 after_pipeline:
   task:
     agent:
@@ -69,7 +58,7 @@ after_pipeline:
           - emit-ci-metrics -p -a test-results
       - name: Publish Test Results
         commands:
-          - test-results gen-pipeline-report
+          - test-results gen-pipeline-report || true
       - name: SonarQube
         commands:
           - checkout
