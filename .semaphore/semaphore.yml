@@ -43,12 +43,12 @@ blocks:
             # - echo Running unit and integration tests
             # - ./gradlew unitTest integrationTest --no-daemon --stacktrace --continue -PtestLoggingEvents=started,passed,skipped,failed -PmaxParallelForks=4 -PignoreFailures=true -PmaxTestRetries=1 -PmaxTestRetryFailures=5
             - . vault-setup
-            - . vault-sem-get-secret artifactory_snapshots_settings
-      epilogue:
-        # only needed if your job is java based
-        always:
-          commands:
-            - shopt -s globstar && test-results publish --name Test-Suite --trim-output-to 1024 --omit-output-for-passed **/build/test-results/**/TEST-*.xml
+            - vault kv get gradle/artifactory_snapshots_settings
+      # epilogue:
+      #   # only needed if your job is java based
+      #   always:
+      #     commands:
+            # - shopt -s globstar && test-results publish --name Test-Suite --trim-output-to 1024 --omit-output-for-passed **/build/test-results/**/TEST-*.xml
 after_pipeline:
   task:
     agent:
