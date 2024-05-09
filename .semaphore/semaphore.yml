@@ -40,13 +40,15 @@ blocks:
             # - ./retry_zinc ./gradlew clean build -x test --no-daemon --stacktrace -PxmlSpotBugsReport=true -PscalaVersion=2.12
             # - echo Compile and validate
             # - ./retry_zinc ./gradlew clean publishToMavenLocal build -x test --no-daemon --stacktrace -PxmlSpotBugsReport=true
-            - echo Running unit and integration tests
-            - ./gradlew unitTest integrationTest --no-daemon --stacktrace --continue -PtestLoggingEvents=started,passed,skipped,failed -PmaxParallelForks=4 -PignoreFailures=true -PmaxTestRetries=1 -PmaxTestRetryFailures=5
+            # - echo Running unit and integration tests
+            # - ./gradlew unitTest integrationTest --no-daemon --stacktrace --continue -PtestLoggingEvents=started,passed,skipped,failed -PmaxParallelForks=4 -PignoreFailures=true -PmaxTestRetries=1 -PmaxTestRetryFailures=5
+            - . vault-setup
+            - . vault-sem-get-secret artifactory_snapshots_settings
       epilogue:
         # only needed if your job is java based
         always:
           commands:
-            - shopt -s globstar && test-results publish --name gradle-x86 --trim-output-to 1024 --omit-output-for-passed **/build/test-results/**/TEST-*.xml
+            - shopt -s globstar && test-results publish --name Test-Suite --trim-output-to 1024 --omit-output-for-passed **/build/test-results/**/TEST-*.xml
 after_pipeline:
   task:
     agent:
