@@ -39,7 +39,7 @@ import org.apache.kafka.metadata.migration.KRaftMigrationZkWriter
 import org.apache.kafka.metadata.migration.ZkMigrationLeadershipState
 import org.apache.kafka.server.common.ApiMessageAndVersion
 import org.apache.kafka.server.util.MockRandom
-import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue}
+import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue, fail}
 import org.junit.jupiter.api.Test
 
 import java.util
@@ -141,15 +141,17 @@ class ZkConfigMigrationClientTest extends ZkMigrationTestHarness {
     RecordTestUtils.replayAllBatches(delta, batches)
     val image = delta.apply()
 
-    assertTrue(image.entities().containsKey(new ClientQuotaEntity(Map("user" -> "").asJava)))
-    assertTrue(image.entities().containsKey(new ClientQuotaEntity(Map("user" -> "user1").asJava)))
-    assertTrue(image.entities().containsKey(new ClientQuotaEntity(Map("user" -> "user1", "client-id" -> "clientA").asJava)))
-    assertTrue(image.entities().containsKey(new ClientQuotaEntity(Map("user" -> "", "client-id" -> "").asJava)))
-    assertTrue(image.entities().containsKey(new ClientQuotaEntity(Map("user" -> "", "client-id" -> "clientA").asJava)))
-    assertTrue(image.entities().containsKey(new ClientQuotaEntity(Map("client-id" -> "").asJava)))
-    assertTrue(image.entities().containsKey(new ClientQuotaEntity(Map("client-id" -> "clientB").asJava)))
-    assertTrue(image.entities().containsKey(new ClientQuotaEntity(Map("ip" -> "1.1.1.1").asJava)))
-    assertTrue(image.entities().containsKey(new ClientQuotaEntity(Map("ip" -> "").asJava)))
+    assertEquals(new util.HashSet[ClientQuotaEntity](java.util.Arrays.asList(
+      new ClientQuotaEntity(Map("user" -> null.asInstanceOf[String]).asJava),
+      new ClientQuotaEntity(Map("user" -> "user1").asJava),
+      new ClientQuotaEntity(Map("user" -> "user1", "client-id" -> "clientA").asJava),
+      new ClientQuotaEntity(Map("user" -> null.asInstanceOf[String], "client-id" -> null.asInstanceOf[String]).asJava),
+      new ClientQuotaEntity(Map("user" -> null.asInstanceOf[String], "client-id" -> "clientA").asJava),
+      new ClientQuotaEntity(Map("client-id" -> null.asInstanceOf[String]).asJava),
+      new ClientQuotaEntity(Map("client-id" -> "clientB").asJava),
+      new ClientQuotaEntity(Map("ip" -> "1.1.1.1").asJava),
+      new ClientQuotaEntity(Map("ip" -> null.asInstanceOf[String]).asJava))),
+      image.entities().keySet())
   }
 
   @Test
@@ -185,7 +187,7 @@ class ZkConfigMigrationClientTest extends ZkMigrationTestHarness {
     assertEquals(4, migrationState.migrationZkVersion())
 
     migrationState = writeClientQuotaAndVerify(migrationClient, adminZkClient, migrationState,
-      Map(ClientQuotaEntity.USER -> ""),
+      Map(ClientQuotaEntity.USER -> null.asInstanceOf[String]),
       Map(QuotaConfigs.CONSUMER_BYTE_RATE_OVERRIDE_CONFIG -> 200.0),
       ConfigType.User, "<default>")
     assertEquals(5, migrationState.migrationZkVersion())
@@ -325,7 +327,7 @@ class ZkConfigMigrationClientTest extends ZkMigrationTestHarness {
     val image = delta.apply(MetadataProvenance.EMPTY)
 
     // load snapshot to Zookeeper.
-    val kraftMigrationZkWriter = new KRaftMigrationZkWriter(migrationClient)
+    val kraftMigrationZkWriter = new KRaftMigrationZkWriter(migrationClient, fail(_))
     kraftMigrationZkWriter.handleSnapshot(image, (_, _, operation) => {
       migrationState = operation.apply(migrationState)
     })

@@ -140,7 +140,7 @@ class BrokerServer(
 
   var brokerMetadataPublisher: BrokerMetadataPublisher = _
 
-  val brokerFeatures: BrokerFeatures = BrokerFeatures.createDefault()
+  val brokerFeatures: BrokerFeatures = BrokerFeatures.createDefault(config.unstableMetadataVersionsEnabled)
 
   def kafkaYammerMetrics: KafkaYammerMetrics = KafkaYammerMetrics.INSTANCE
 
@@ -452,7 +452,9 @@ class BrokerServer(
           authorizer
         ),
         sharedServer.initialBrokerMetadataLoadFaultHandler,
-        sharedServer.metadataPublishingFaultHandler)
+        sharedServer.metadataPublishingFaultHandler,
+        lifecycleManager
+      )
       metadataPublishers.add(brokerMetadataPublisher)
 
       // Register parts of the broker that can be reconfigured via dynamic configs.  This needs to

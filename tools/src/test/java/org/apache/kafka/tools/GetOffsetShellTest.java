@@ -29,6 +29,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.common.utils.Exit;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -310,6 +311,18 @@ public class GetOffsetShellTest {
     @ClusterTest
     public void testTopicPartitionsFlagWithPartitionsFlagCauseExit() {
         assertExitCodeIsOne("--topic-partitions", "__consumer_offsets", "--partitions", "0");
+    }
+
+    @ClusterTest
+    public void testPrintHelp() {
+        String out = ToolsTestUtils.captureStandardErr(() -> GetOffsetShell.mainNoExit("--help"));
+        assertTrue(out.startsWith(GetOffsetShell.USAGE_TEXT));
+    }
+
+    @ClusterTest
+    public void testPrintVersion() {
+        String out = ToolsTestUtils.captureStandardOut(() -> GetOffsetShell.mainNoExit("--version"));
+        assertEquals(AppInfoParser.getVersion(), out);
     }
 
     private void assertExitCodeIsOne(String... args) {

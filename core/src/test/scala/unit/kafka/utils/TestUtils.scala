@@ -253,6 +253,17 @@ object TestUtils extends Logging {
     }
   }
 
+  @deprecated("This method will be removed soon, please use plaintextBootstrapServers() or bootstrapServers() instead")
+  def getBrokerListStrFromServers[B <: KafkaBroker](
+                                                     brokers: Seq[B],
+                                                     protocol: SecurityProtocol = SecurityProtocol.PLAINTEXT): String = {
+    brokers.map { s =>
+      val listener = s.config.effectiveAdvertisedListeners.find(_.securityProtocol == protocol).getOrElse(
+        sys.error(s"Could not find listener with security protocol $protocol"))
+      formatAddress(listener.host, boundPort(s, protocol))
+    }.mkString(",")
+  }
+
   def plaintextBootstrapServers[B <: KafkaBroker](
     brokers: Seq[B]
   ): String = {
@@ -917,7 +928,7 @@ object TestUtils extends Logging {
       Broker(b.id, Seq(EndPoint("localhost", 6667, listenerName, protocol)), if (b.rack.isPresent) Some(b.rack.get()) else None)
     }
     brokers.foreach(b => zkClient.registerBroker(BrokerInfo(Broker(b.id, b.endPoints, rack = b.rack),
-      MetadataVersion.latest, jmxPort = -1)))
+      MetadataVersion.latestTesting, jmxPort = -1)))
     brokers
   }
 
@@ -1402,6 +1413,17 @@ object TestUtils extends Logging {
     assertEquals(0, threadCount, s"Found unexpected $threadCount NonDaemon threads=${nonDaemonThreads.map(t => t.getName).mkString(", ")}")
   }
 
+  // Some threads are closed, but the state didn't reflect in the JVM immediately, so add some wait time for it
+  def assertNoNonDaemonThreadsWithWaiting(threadNamePrefix: String, waitTimeMs: Long = 500L): Unit = {
+    var nonDemonThreads: mutable.Set[Thread] = mutable.Set.empty[Thread]
+    waitUntilTrue(() => {
+      nonDemonThreads = Thread.getAllStackTraces.keySet.asScala.filter { t =>
+        !t.isDaemon && t.isAlive && t.getName.startsWith(threadNamePrefix)
+      }
+      0 == nonDemonThreads.size
+    }, s"Found unexpected ${nonDemonThreads.size} NonDaemon threads=${nonDemonThreads.map(t => t.getName).mkString(", ")}", waitTimeMs)
+  }
+
   def numThreadsRunning(threadNamePrefix: String, isDaemon: Boolean): mutable.Set[Thread] = {
     Thread.getAllStackTraces.keySet.asScala.filter { t =>
       isDaemon && t.isAlive && t.getName.startsWith(threadNamePrefix)
@@ -1443,7 +1465,7 @@ object TestUtils extends Logging {
                        configRepository: ConfigRepository = new MockConfigRepository,
                        cleanerConfig: CleanerConfig = new CleanerConfig(false),
                        time: MockTime = new MockTime(),
-                       interBrokerProtocolVersion: MetadataVersion = MetadataVersion.latest,
+                       interBrokerProtocolVersion: MetadataVersion = MetadataVersion.latestTesting,
                        recoveryThreadsPerDataDir: Int = 4,
                        transactionVerificationEnabled: Boolean = false,
                        log: Option[UnifiedLog] = None,

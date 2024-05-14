@@ -92,6 +92,7 @@ object Defaults {
   /** KRaft mode configs */
   val EmptyNodeId: Int = -1
   val ServerMaxStartupTimeMs = Long.MaxValue
+  val MigrationMetadataMinBatchSize = 200
 
   /************* Authorizer Configuration ***********/
   val AuthorizerClassName = ""
@@ -152,7 +153,7 @@ object Defaults {
   val LeaderImbalancePerBrokerPercentage = 10
   val LeaderImbalanceCheckIntervalSeconds = 300
   val InterBrokerSecurityProtocol = SecurityProtocol.PLAINTEXT.toString
-  val InterBrokerProtocolVersion = MetadataVersion.latest.version
+  val InterBrokerProtocolVersion = MetadataVersion.latestProduction.version
 
   /** ********* Controlled shutdown configuration ***********/
   val ControlledShutdownMaxRetries = 3
@@ -403,6 +404,7 @@ object KafkaConfig {
 
   /** ZK to KRaft Migration configs */
   val MigrationEnabledProp = "zookeeper.metadata.migration.enable"
+  val MigrationMetadataMinBatchSizeProp = "zookeeper.metadata.migration.min.batch.size"
 
   /** Enable eligible leader replicas configs */
   val ElrEnabledProp = "eligible.leader.replicas.enable"
@@ -1260,6 +1262,8 @@ object KafkaConfig {
       .defineInternal(ServerMaxStartupTimeMsProp, LONG, Defaults.ServerMaxStartupTimeMs, atLeast(0), MEDIUM, ServerMaxStartupTimeMsDoc)
       .define(MigrationEnabledProp, BOOLEAN, false, HIGH, "Enable ZK to KRaft migration")
       .define(ElrEnabledProp, BOOLEAN, false, HIGH, "Enable the Eligible leader replicas")
+      .defineInternal(MigrationMetadataMinBatchSizeProp, INT, Defaults.MigrationMetadataMinBatchSize, atLeast(1),
+        MEDIUM, "Soft minimum batch size to use when migrating metadata from ZooKeeper to KRaft")
 
       /************* Authorizer Configuration ***********/
       .define(AuthorizerClassNameProp, STRING, Defaults.AuthorizerClassName, new ConfigDef.NonNullValidator(), LOW, AuthorizerClassNameDoc)
@@ -1629,7 +1633,7 @@ object KafkaConfig {
 }
 
 class KafkaConfig private(doLog: Boolean, val props: java.util.Map[_, _], dynamicConfigOverride: Option[DynamicBrokerConfig])
-  extends AbstractConfig(KafkaConfig.configDef, props, doLog) with Logging {
+  extends AbstractConfig(KafkaConfig.configDef, props, Utils.castToStringObjectMap(props), doLog) with Logging {
 
   def this(props: java.util.Map[_, _]) = this(true, KafkaConfig.populateSynonyms(props), None)
   def this(props: java.util.Map[_, _], doLog: Boolean) = this(doLog, KafkaConfig.populateSynonyms(props), None)
@@ -1766,6 +1770,7 @@ class KafkaConfig private(doLog: Boolean, val props: java.util.Map[_, _], dynami
   def usesSelfManagedQuorum: Boolean = processRoles.nonEmpty
 
   val migrationEnabled: Boolean = getBoolean(KafkaConfig.MigrationEnabledProp)
+  val migrationMetadataMinBatchSize: Int = getInt(KafkaConfig.MigrationMetadataMinBatchSizeProp)
 
   val elrEnabled: Boolean = getBoolean(KafkaConfig.ElrEnabledProp)
 
