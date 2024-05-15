@@ -108,7 +108,7 @@ public class LeaderState<T> implements EpochState {
         checkQuorumTimer.update(currentTimeMs);
         long remainingMs = checkQuorumTimer.remainingMs();
         if (remainingMs == 0) {
-            log.info(
+            log.debug(
                 "Did not receive fetch request from the majority of the voters within {}ms. Current fetched voters are {}.",
                 checkQuorumTimeoutMs,
                 fetchedVoters);
@@ -281,7 +281,7 @@ public class LeaderState<T> implements EpochState {
                 followersByDescendingFetchOffset
             );
         } else {
-            log.info(
+            log.debug(
                 "High watermark set to {} for the first time for epoch {} based on indexOfHw {} and voters {}",
                 newHighWatermark,
                 epoch,

@@ -2754,6 +2754,7 @@ public class KafkaAdminClient extends AdminClient {
             futures.put(resource, new KafkaFutureImpl<>());
 
         final long now = time.milliseconds();
+        log.info("[APM] deadline ms: {}", calcDeadlineMs(now, options.timeoutMs()));
         runnable.call(new Call("incrementalAlterConfigs", calcDeadlineMs(now, options.timeoutMs()), nodeProvider) {
 
             @Override

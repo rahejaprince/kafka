@@ -194,7 +194,7 @@ public class FollowerState implements EpochState {
                     epoch
                 );
             } else {
-                log.info(
+                log.debug(
                     "High watermark set to {} for the first time for epoch {}",
                     newHighWatermark,
                     epoch

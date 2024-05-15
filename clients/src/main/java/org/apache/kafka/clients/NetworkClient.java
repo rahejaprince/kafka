@@ -330,7 +330,7 @@ public class NetworkClient implements KafkaClient {
             return;
         }
 
-        log.info("Client requested disconnect from node {}", nodeId);
+        log.debug("Client requested disconnect from node {}", nodeId);
         selector.close(nodeId);
         long now = time.milliseconds();
         cancelInFlightRequests(nodeId, now, abortedSends, false);

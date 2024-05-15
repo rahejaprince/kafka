@@ -108,9 +108,9 @@ ext {
   skipSigning = project.hasProperty('skipSigning') && skipSigning.toBoolean()
   shouldSign = !skipSigning && !version.endsWith("SNAPSHOT") && !version.contains("-alpha") && !version.matches("[0-9]*\\.[0-9]*\\.[0-9]*-[0-9]*-(ccs|ce)")
 
-  mavenUrl = propertyOrElse(project, 'mavenUrl', '')
-  mavenUsername = propertyOrElse(project, 'mavenUsername', '')
-  mavenPassword = propertyOrElse(project, 'mavenPassword', '')
+  mavenUrl = project.hasProperty('mavenUrl') ? project.mavenUrl : ''
+  mavenUsername = project.hasProperty('mavenUsername') ? project.mavenUsername : ''
+  mavenPassword = project.hasProperty('mavenPassword') ? project.mavenPassword : ''
 
   userShowStandardStreams = project.hasProperty("showStandardStreams") ? showStandardStreams : null
 
@@ -990,6 +990,7 @@ project(':core') {
     implementation project(':storage')
     implementation project(':server')
 
+    implementation libs.grpcNetty
     implementation libs.argparse4j
     implementation libs.commonsValidator
     implementation libs.jacksonDatabind
@@ -1018,6 +1019,13 @@ project(':core') {
     }
     // ZooKeeperMain depends on commons-cli but declares the dependency as `provided`
     implementation libs.commonsCli
+    // opentelemetry dependencies
+    implementation libs.opentelemetryProto
+    implementation libs.grpcApi
+    implementation libs.grpcNetty
+    implementation libs.grpcCore
+    implementation libs.grpcStub
+    implementation libs.grpcProtobuf
 
     compileOnly libs.log4j
 
@@ -1514,9 +1522,18 @@ project(':clients') {
     testRuntimeOnly libs.slf4jlog4j
     testRuntimeOnly libs.jacksonDatabind
     testRuntimeOnly libs.jacksonJDK8Datatypes
+    testImplementation libs.jose4j
+    testImplementation libs.jacksonJaxrsJsonProvider
 
     generator project(':generator')
   }
+
+//  println "[APM]: File2 ${configurations}"
+//  configurations.runtimeClasspath.extendsFrom configurations.shadowed
+//  println "[APM]: File3 ${configurations}"
+//  println "[APM]: File4 ${sourceSets}"
+//  sourceSets.main.runtimeClasspath += configurations.shadowed
+//  println "[APM]: File5 ${sourceSets}"
 
   task createVersionFile() {
     def receiptFile = file("$buildDir/kafka/$buildVersionFileName")
@@ -1538,6 +1555,10 @@ project(':clients') {
 
   shadowJar {
     dependsOn createVersionFile
+//    println "[APM]: File ${configurations}"
+//    configurations = []
+//    println "[APM]: File1 ${configurations}"
+
     // archiveClassifier defines the classifier for the shadow jar, the default is 'all'.
     // We don't want to use the default classifier because it will cause the shadow jar to
     // overwrite the original jar. We also don't want to use the 'shadow' classifier because
@@ -1754,6 +1775,7 @@ project(':server-common') {
 
   dependencies {
     api project(':clients')
+    implementation libs.grpcNetty
     implementation libs.slf4jApi
     implementation libs.metrics
     implementation libs.joptSimple
@@ -3387,4 +3409,3 @@ task aggregatedJavadoc(type: Javadoc, dependsOn: compileJava) {
   else
     options.links "https://docs.oracle.com/javase/8/docs/api/"
 }
-

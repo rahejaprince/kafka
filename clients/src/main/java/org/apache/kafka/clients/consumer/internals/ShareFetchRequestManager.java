@@ -219,7 +219,7 @@ public class ShareFetchRequestManager implements RequestManager, MemberStateList
         try {
             final ShareFetchResponse response = (ShareFetchResponse) resp.responseBody();
             final ShareSessionHandler handler = sessionHandler(fetchTarget.id());
-
+            log.info("[APM] - Share fetch response: {}", response.data());
             if (handler == null) {
                 log.error("Unable to find ShareSessionHandler for node {}. Ignoring ShareFetch response.",
                         fetchTarget.id());

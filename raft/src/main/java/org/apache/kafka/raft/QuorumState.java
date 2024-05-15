@@ -484,7 +484,7 @@ public class QuorumState {
     private void memoryTransitionTo(EpochState state) {
         EpochState from = this.state;
         this.state = state;
-        log.info("Completed transition to {} from {}", state, from);
+        log.debug("Completed transition to {} from {}", state, from);
     }
 
     private int randomElectionTimeoutMs() {

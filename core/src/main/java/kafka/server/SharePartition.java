@@ -487,14 +487,18 @@ public class SharePartition {
             for (int i = 0; i < acknowledgementBatch.size(); i++) {
                 AcknowledgementBatch batch = acknowledgementBatch.get(i);
 
-                RecordState recordState;
-                try {
-                    recordState = fetchRecordState(batch.acknowledgeType);
-                } catch (IllegalArgumentException e) {
-                    log.debug("Invalid acknowledge type: {} for share partition: {}-{}",
-                        batch.acknowledgeType, groupId, topicIdPartition);
-                    throwable = new InvalidRequestException("Invalid acknowledge type: " + batch.acknowledgeType);
-                    break;
+                // Client can either send a single entry in acknowledgeTypes which represents the state
+                // of the complete batch or can send individual offsets state.
+                RecordState recordStateBatch = null;
+                if (batch.acknowledgeTypes().size() == 1) {
+                    try {
+                        recordStateBatch = fetchRecordState(batch.acknowledgeTypes().get(0));
+                    } catch (IllegalArgumentException e) {
+                        log.debug("Invalid acknowledge type: {} for share partition: {}-{}",
+                            batch.acknowledgeTypes(), groupId, topicIdPartition);
+                        throwable = new InvalidRequestException("Invalid acknowledge type: " + batch.acknowledgeTypes());
+                        break;
+                    }
                 }
 
                 // Find the floor batch record for the request batch. The request batch could be
@@ -1097,6 +1101,7 @@ public class SharePartition {
             case RELEASE:
                 return RecordState.AVAILABLE;
             case REJECT:
+            case GAP:
                 return RecordState.ARCHIVED;
             default:
                 throw new IllegalArgumentException("Invalid acknowledge type: " + acknowledgeType);
@@ -1597,14 +1602,12 @@ public class SharePartition {
 
         private final long firstOffset;
         private final long lastOffset;
-        private final List<Long> gapOffsets;
-        private final AcknowledgeType acknowledgeType;
+        private final List<AcknowledgeType> acknowledgeTypes;
 
-        public AcknowledgementBatch(long firstOffset, long lastOffset, List<Long> gapOffsets, AcknowledgeType acknowledgeType) {
+        public AcknowledgementBatch(long firstOffset, long lastOffset, List<AcknowledgeType> acknowledgeTypes) {
             this.firstOffset = firstOffset;
             this.lastOffset = lastOffset;
-            this.gapOffsets = gapOffsets;
-            this.acknowledgeType = Objects.requireNonNull(acknowledgeType);
+            this.acknowledgeTypes = acknowledgeTypes;
         }
 
         public long firstOffset() {
@@ -1615,12 +1618,8 @@ public class SharePartition {
             return lastOffset;
         }
 
-        public List<Long> gapOffsets() {
-            return gapOffsets;
-        }
-
-        public AcknowledgeType acknowledgeType() {
-            return acknowledgeType;
+        public List<AcknowledgeType> acknowledgeTypes() {
+            return acknowledgeTypes;
         }
 
         @Override
@@ -1628,8 +1627,7 @@ public class SharePartition {
             return "AcknowledgementBatch(" +
                 " firstOffset=" + firstOffset +
                 ", lastOffset=" + lastOffset +
-                ", gapOffsets=" + ((gapOffsets == null) ? "" : gapOffsets) +
-                ", acknowledgeType=" + acknowledgeType +
+                ", acknowledgeTypes=" + ((acknowledgeTypes == null) ? "" : acknowledgeTypes) +
                 ")";
         }
     }

@@ -44,7 +44,7 @@ import org.apache.kafka.common.requests.{OffsetCommitRequest, OffsetFetchRespons
 import org.apache.kafka.common.utils.{Time, Utils}
 import org.apache.kafka.common.{KafkaException, MessageFormatter, TopicIdPartition, TopicPartition}
 import org.apache.kafka.coordinator.group.OffsetConfig
-import org.apache.kafka.coordinator.group.generated.{GroupMetadataValue, OffsetCommitKey, OffsetCommitValue, GroupMetadataKey => GroupMetadataKeyData}
+import org.apache.kafka.coordinator.group.generated.{ConsumerGroupMetadataKey, ConsumerGroupMetadataValue, GroupMetadataValue, OffsetCommitKey, OffsetCommitValue, ShareGroupMemberMetadataKey, ShareGroupMemberMetadataValue, GroupMetadataKey => GroupMetadataKeyData}
 import org.apache.kafka.server.common.MetadataVersion
 import org.apache.kafka.server.common.MetadataVersion.{IBP_0_10_1_IV0, IBP_2_1_IV0, IBP_2_1_IV1, IBP_2_3_IV0}
 import org.apache.kafka.server.metrics.KafkaMetricsGroup
@@ -696,6 +696,10 @@ class GroupMetadataManager(brokerId: Int,
                       removedGroups.add(groupId)
                     }
 
+                  case _: ConsumerGroupNewMetadataKey => // no op
+
+                  case _: ShareGroupMemberNewMetadataKey => // no op
+
                   case unknownKey: UnknownKey =>
                     warn(s"Unknown message key with version ${unknownKey.version}" +
                       s" while loading offsets and group metadata from $topicPartition. Ignoring it. " +
@@ -1174,7 +1178,16 @@ object GroupMetadataManager {
       // version 2 refers to group metadata
       val key = new GroupMetadataKeyData(new ByteBufferAccessor(buffer), version)
       GroupMetadataKey(version, key.group)
-    } else {
+    } else if (version >= ConsumerGroupMetadataKey.LOWEST_SUPPORTED_VERSION && version <= ConsumerGroupMetadataKey.HIGHEST_SUPPORTED_VERSION) {
+      // version 3 refers to consumer group metadata
+      val key = new ConsumerGroupMetadataKey(new ByteBufferAccessor(buffer), version)
+      ConsumerGroupNewMetadataKey(version, key.groupId)
+    } else if (version >= ShareGroupMemberMetadataKey.LOWEST_SUPPORTED_VERSION && version <= ShareGroupMemberMetadataKey.HIGHEST_SUPPORTED_VERSION) {
+      // version 10 refers to consumer group metadata
+      val key = new ShareGroupMemberMetadataKey(new ByteBufferAccessor(buffer), version)
+      ShareGroupMemberNewMetadataKey(version, key.groupId + ":" + key.memberId)
+    }
+    else {
       UnknownKey(version)
     }
   }
@@ -1243,6 +1256,44 @@ object GroupMetadataManager {
     }
   }
 
+  /**
+   * Decodes the group metadata messages' payload and retrieves its member metadata from it
+   *
+   * @param groupId The ID of the group to be read
+   * @param buffer input byte-buffer
+   * @param time the time instance to use
+   * @return a group metadata object from the message
+   */
+  def readNewGroupMessageValue(groupId: String, buffer: ByteBuffer): ConsumerGroupMetadataValue = {
+    // tombstone
+    if (buffer == null) null
+    else {
+      val version = buffer.getShort
+      if (version >= ConsumerGroupMetadataValue.LOWEST_SUPPORTED_VERSION && version <= ConsumerGroupMetadataValue.HIGHEST_SUPPORTED_VERSION) {
+        new ConsumerGroupMetadataValue(new ByteBufferAccessor(buffer), version)
+      } else throw new IllegalStateException(s"Unknown new group metadata message version: $version")
+    }
+  }
+
+  /**
+   * Decodes the group metadata messages' payload and retrieves its member metadata from it
+   *
+   * @param groupId The ID of the group to be read
+   * @param buffer input byte-buffer
+   * @param time the time instance to use
+   * @return a group metadata object from the message
+   */
+  def readNewGroupMemberMessageValue(buffer: ByteBuffer): ShareGroupMemberMetadataValue = {
+    // tombstone
+    if (buffer == null) null
+    else {
+      val version = buffer.getShort
+      if (version >= ShareGroupMemberMetadataValue.LOWEST_SUPPORTED_VERSION && version <= ShareGroupMemberMetadataValue.HIGHEST_SUPPORTED_VERSION) {
+        new ShareGroupMemberMetadataValue(new ByteBufferAccessor(buffer), version)
+      } else throw new IllegalStateException(s"Unknown new group metadata message version: $version")
+    }
+  }
+
   // Formatter for use with tools such as console consumer: Consumer should also set exclude.internal.topics to false.
   // (specify --formatter "kafka.coordinator.group.GroupMetadataManager\$OffsetsMessageFormatter" when consuming __consumer_offsets)
   class OffsetsMessageFormatter extends MessageFormatter {
@@ -1281,6 +1332,48 @@ object GroupMetadataManager {
           output.write("::".getBytes(StandardCharsets.UTF_8))
           output.write(formattedValue.getBytes(StandardCharsets.UTF_8))
           output.write("\n".getBytes(StandardCharsets.UTF_8))
+        case groupMetadataKey: ConsumerGroupNewMetadataKey =>
+          System.out.println("ConsumerGroupNewMetadataKey")
+          val groupId = groupMetadataKey.key
+          val value = consumerRecord.value
+          val formattedValue =
+            if (value == null) "NULL"
+            else GroupMetadataManager.readNewGroupMessageValue(groupId, ByteBuffer.wrap(value)).toString
+          output.write(groupId.getBytes(StandardCharsets.UTF_8))
+          output.write("::".getBytes(StandardCharsets.UTF_8))
+          output.write(formattedValue.getBytes(StandardCharsets.UTF_8))
+          output.write("\n".getBytes(StandardCharsets.UTF_8))
+        case _ => // no-op
+      }
+    }
+  }
+
+  // Formatter for use with tools to read new group metadata history
+  class NewGroupMetadataMessageFormatter extends MessageFormatter {
+    def writeTo(consumerRecord: ConsumerRecord[Array[Byte], Array[Byte]], output: PrintStream): Unit = {
+      Option(consumerRecord.key).map(key => GroupMetadataManager.readMessageKey(ByteBuffer.wrap(key))).foreach {
+        // Only print if the message is a group metadata record.
+        // We ignore the timestamp of the message because GroupMetadataMessage has its own timestamp.
+        case groupMetadataKey: ConsumerGroupNewMetadataKey =>
+          val groupId = groupMetadataKey.key
+          val value = consumerRecord.value
+          val formattedValue =
+            if (value == null) "NULL"
+            else GroupMetadataManager.readNewGroupMessageValue(groupId, ByteBuffer.wrap(value)).toString
+          output.write(groupId.getBytes(StandardCharsets.UTF_8))
+          output.write("::".getBytes(StandardCharsets.UTF_8))
+          output.write(formattedValue.getBytes(StandardCharsets.UTF_8))
+          output.write("\n".getBytes(StandardCharsets.UTF_8))
+        case shareGroupMember: ShareGroupMemberNewMetadataKey =>
+          val member = shareGroupMember.key
+          val value = consumerRecord.value
+          val formattedValue =
+            if (value == null) "NULL"
+            else GroupMetadataManager.readNewGroupMemberMessageValue(ByteBuffer.wrap(value)).toString
+          output.write(member.getBytes(StandardCharsets.UTF_8))
+          output.write("::".getBytes(StandardCharsets.UTF_8))
+          output.write(formattedValue.getBytes(StandardCharsets.UTF_8))
+          output.write("\n".getBytes(StandardCharsets.UTF_8))
         case _ => // no-op
       }
     }
@@ -1296,6 +1389,8 @@ object GroupMetadataManager {
       GroupMetadataManager.readMessageKey(record.key) match {
         case offsetKey: OffsetKey => parseOffsets(offsetKey, record.value)
         case groupMetadataKey: GroupMetadataKey => parseGroupMetadata(groupMetadataKey, record.value)
+        case _: ConsumerGroupNewMetadataKey => (Option.empty, Option.empty) // no op
+        case _: ShareGroupMemberNewMetadataKey => (Option.empty, Option.empty) // no op
         case unknownKey: UnknownKey => (Some(s"unknown::version=${unknownKey.version}"), None)
       }
     }
@@ -1414,6 +1509,14 @@ case class OffsetKey(version: Short, key: GroupTopicPartition) extends BaseKey {
 }
 
 case class GroupMetadataKey(version: Short, key: String) extends BaseKey {
+  override def toString: String = key
+}
+
+case class ConsumerGroupNewMetadataKey(version: Short, key: String) extends BaseKey {
+  override def toString: String = key
+}
+
+case class ShareGroupMemberNewMetadataKey(version: Short, key: String) extends BaseKey {
   override def toString: String = key
 }
 

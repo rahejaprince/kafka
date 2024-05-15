@@ -37,7 +37,7 @@ public class ShareAcknowledgeRequest extends AbstractRequest {
         private final ShareAcknowledgeRequestData data;
 
         public Builder(ShareAcknowledgeRequestData data) {
-            this(data, false);
+            this(data, true);
         }
 
         public Builder(ShareAcknowledgeRequestData data, boolean enableUnstableLastVersion) {
