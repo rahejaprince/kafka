@@ -248,8 +248,8 @@ public class ShareCoordinatorShard implements CoordinatorShard<Record> {
             .setTopicId(entry.getValue().topicId)
             .setPartitions(Collections.singletonList(new WriteShareGroupStateResponseData.PartitionResult()
                 .setPartition(entry.getValue().partition)
-                .setErrorCode(Errors.STALE_SHARE_STATE_LEADER_EPOCH.code())
-                .setErrorMessage(Errors.STALE_SHARE_STATE_LEADER_EPOCH.message())))));
+                .setErrorCode(Errors.FENCED_LEADER_EPOCH.code())
+                .setErrorMessage(Errors.FENCED_LEADER_EPOCH.message())))));
         return new CoordinatorResult<>(Collections.emptyList(), responseData);
       }
     }
