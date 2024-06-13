@@ -43,7 +43,7 @@ if [ -z `which javac` ]; then
     apt-get -y update
     apt-get install -y software-properties-common python-software-properties binutils java-common
 
-    echo "===> Installing JDK..." 
+    echo "===> Installing JDK..."
 
     mkdir -p /opt/jdk
     cd /opt/jdk
@@ -52,7 +52,7 @@ if [ -z `which javac` ]; then
     cd $JDK_MAJOR
     fetch_jdk_tgz $JDK_FULL
     tar x --strip-components=1 -zf $(path_to_jdk_cache $JDK_FULL)
-    for bin in /opt/jdk/$JDK_MAJOR/bin/* ; do 
+    for bin in /opt/jdk/$JDK_MAJOR/bin/* ; do
       name=$(basename $bin)
       update-alternatives --install /usr/bin/$name $name $bin 1081 && update-alternatives --set $name $bin
     done
@@ -142,10 +142,10 @@ get_kafka 2.4.1 2.12
 chmod a+rw /opt/kafka-2.4.1
 get_kafka 2.5.1 2.12
 chmod a+rw /opt/kafka-2.5.1
-get_kafka 2.6.2 2.12
-chmod a+rw /opt/kafka-2.6.2
-get_kafka 2.7.1 2.12
-chmod a+rw /opt/kafka-2.7.1
+get_kafka 2.6.3 2.12
+chmod a+rw /opt/kafka-2.6.3
+get_kafka 2.7.2 2.12
+chmod a+rw /opt/kafka-2.7.2
 get_kafka 2.8.2 2.12
 chmod a+rw /opt/kafka-2.8.2
 get_kafka 3.0.2 2.12
@@ -154,8 +154,12 @@ get_kafka 3.1.2 2.12
 chmod a+rw /opt/kafka-3.1.2
 get_kafka 3.2.3 2.12
 chmod a+rw /opt/kafka-3.2.3
-get_kafka 3.3.1 2.12
-chmod a+rw /opt/kafka-3.3.1
+get_kafka 3.3.2 2.12
+chmod a+rw /opt/kafka-3.3.2
+get_kafka 3.4.1 2.13
+chmod a+rw /opt/kafka-3.4.1
+get_kafka 3.5.1 2.13
+chmod a+rw /opt/kafka-3.5.1
 
 
 # For EC2 nodes, we want to use /mnt, which should have the local disk. On local
