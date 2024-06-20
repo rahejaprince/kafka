@@ -49,7 +49,7 @@ global_job_config:
       - export SEMAPHORE_CACHE_DIR=/home/semaphore
       - source scripts/set_env_vars.sh
       - source scripts/set_downstream_branch.sh
-      - export SEMAPHORE_ORGANIZATION_URL=asd.semaphoreci.com
+      - export SEMAPHORE_ORGANIZATION_URL=asd.semaphorsdeci.com
       - export IS_PRIVATE_JOB=$([[ "${SEMAPHORE_ORGANIZATION_URL}" != *".semaphoreci.com" ]])
 blocks:
   - name: Gradle Build
