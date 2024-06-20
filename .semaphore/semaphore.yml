@@ -60,6 +60,11 @@ blocks:
       jobs:
         - name: Build, Compile, Validations, Publish
           commands:
+          - |
+            if [[ "${SEMAPHORE_ORGANIZATION_URL}" != *".semaphoreci.com" ]]; then
+              echo "Not meant to run on public semaphore!"
+              exit 1
+            fi
             - >-
               if [[ "${SEMAPHORE_ORGANIZATION_URL}" != *".semaphoreci.com" ]] && [ "$NANO_VERSION" = "true" ] && [ "$RELEASE_JOB" = "false" ] && [ "$ENABLE_PUBLISH_ARTIFACTS" = "true" ]; then
                 . ci-tools ci-update-version
