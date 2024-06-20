@@ -61,7 +61,7 @@ blocks:
         - name: Build, Compile, Validations, Publish
           commands:
             - >-
-              if [ "$NANO_VERSION" = "true" ] && [ "$RELEASE_JOB" = "false" ] && [ "$ENABLE_PUBLISH_ARTIFACTS" = "true" ]; then
+              if [[ "${SEMAPHORE_ORGANIZATION_URL}" != *".semaphoreci.com" ]] && [ "$NANO_VERSION" = "true" ] && [ "$RELEASE_JOB" = "false" ] && [ "$ENABLE_PUBLISH_ARTIFACTS" = "true" ]; then
                 . ci-tools ci-update-version
               fi
             - make compile-validate
