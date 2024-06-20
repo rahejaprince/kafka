@@ -57,7 +57,7 @@ blocks:
   - name: Gradle Build
     dependencies: []
     run:
-      when: [[ "${SEMAPHORE_ORGANIZATION_URL}" != *".semaphoreci.com" ]]
+      when: "[[ "${SEMAPHORE_ORGANIZATION_URL}" != *".semaphoreci.com" ]]"
     task:
       jobs:
         - name: Build, Compile, Validations, Publish
