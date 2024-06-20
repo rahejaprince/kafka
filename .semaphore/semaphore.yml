@@ -57,33 +57,21 @@ blocks:
   - name: Gradle Build
     dependencies: []
     task:
-      prologue:
-        commands:
-          - make init-ci
       jobs:
         - name: Build, Compile, Validations, Publish
           commands:
-            - export mavenUrl=$(vault kv get v1/ci/kv/gradle/artifactory_snapshots_settings | grep mavenUrl | cut -d "," -f 2 | cut -d "'" -f 2)
-            - echo $mavenUrl
-            - export mavenUrl=$(vault kv get v1/ci/kv/gradle/artifactory_preview_release_settings | grep mavenUrl | cut -d "," -f 2 | cut -d "'" -f 2)
-            - echo $mavenUrl
-            - export SEMAPHORE_ORGANIZATION_URL=asdf.semaphoreci.com
-            - |
-              if [[ "${SEMAPHORE_ORGANIZATION_URL}" == *".semaphoreci.com" ]] && [ "$PUBLISH" = "true" ]; then \
-                echo "here1 success"
+            - >-
+              if [ "$NANO_VERSION" = "true" ] && [ "$RELEASE_JOB" = "false" ] && [ "$ENABLE_PUBLISH_ARTIFACTS" = "true" ]; then
+                . ci-tools ci-update-version
               fi
+            - make compile-validate
+            - make check-scala-compatibility
             - |
-              if [[ "${SEMAPHORE_ORGANIZATION_URL}" != *".semaphoreci.com" ]] && [ "$PUBLISH" = "true" ]; then \
-                echo "here2 failed"
-              fi
-            - export SEMAPHORE_ORGANIZATION_URL=asdf.dasdfg.com
-            - |
-              if [[ "${SEMAPHORE_ORGANIZATION_URL}" == *".semaphoreci.com" ]] && [ "$PUBLISH" = "true" ]; then \
-                echo "here3 fail"
-              fi
-            - |
-              if [[ "${SEMAPHORE_ORGANIZATION_URL}" != *".semaphoreci.com" ]] && [ "$PUBLISH" = "true" ]; then \
-                echo "here4 success"
+              echo "PUBLISH: $PUBLISH, RELEASE_JOB: $RELEASE_JOB, SEMAPHORE_GIT_REF_TYPE: $SEMAPHORE_GIT_REF_TYPE, ENABLE_DOWNSTREAM_TRIGGER: $ENABLE_DOWNSTREAM_TRIGGER"
+              if [ "$PUBLISH" = "true" ] && [ "$RELEASE_JOB" = "false" ] && [ "$SEMAPHORE_GIT_REF_TYPE" != "pull-request" ] && [ "$ENABLE_DOWNSTREAM_TRIGGER" = "true" ]; then
+                for project in $DOWNSTREAM_PROJECTS; do
+                  sem-trigger -p $project -b $DOWNSTREAM_BRANCH_NAME -f .semaphore/semaphore.yml
+                done
               fi
   - name: Tests
     dependencies: []
