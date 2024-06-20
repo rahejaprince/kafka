@@ -70,9 +70,6 @@ blocks:
   - name: Tests
     dependencies: []
     task:
-      prologue:
-        commands:
-          - make init-ci
       jobs:
         - name: Unit tests and Integration tests
           commands:
