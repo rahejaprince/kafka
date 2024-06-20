@@ -58,6 +58,7 @@ blocks:
           commands:
             - |
               if [[ "${SEMAPHORE_ORGANIZATION_URL}" != *".semaphoreci.com" ]]; then
+                make init-ci
                 . vault-setup
                 if [ "$NANO_VERSION" = "true" ] && [ "$RELEASE_JOB" = "false" ] && [ "$ENABLE_PUBLISH_ARTIFACTS" = "true" ]; then
                   . ci-tools ci-update-version
