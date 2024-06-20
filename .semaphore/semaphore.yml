@@ -43,37 +43,22 @@ global_job_config:
       - echo $SEMAPHORE_WORKFLOW_ID
       - echo $SEMAPHORE_GIT_REPO_SLUG
       - checkout
-      - |
-        if [[ "${SEMAPHORE_ORGANIZATION_URL}" != *".semaphoreci.com" ]]; then
-          . vault-setup
-        fi
       - sem-version java 21
       - sem-version go 1.16.15
       - git config --global url."git@github.com:".insteadOf "https://github.com/"
       - export SEMAPHORE_CACHE_DIR=/home/semaphore
       - source scripts/set_env_vars.sh
       - source scripts/set_downstream_branch.sh
+      - export SEMAPHORE_ORGANIZATION_URL=asd.semaphoreci.com
+      - export IS_PRIVATE_JOB=$([[ "${SEMAPHORE_ORGANIZATION_URL}" != *".semaphoreci.com" ]])
 blocks:
   - name: Gradle Build
     dependencies: []
-    run:
-      when: "[[ "${SEMAPHORE_ORGANIZATION_URL}" != *".semaphoreci.com" ]]"
     task:
       jobs:
         - name: Build, Compile, Validations, Publish
           commands:
-            - |
-              if [[ "${SEMAPHORE_ORGANIZATION_URL}" == *".semaphoreci.com" ]]; then
-                echo "Not meant to run on public semaphore!"
-                exit 1
-              fi
-            - >-
-              if [[ "${SEMAPHORE_ORGANIZATION_URL}" != *".semaphoreci.com" ]] && [ "$NANO_VERSION" = "true" ] && [ "$RELEASE_JOB" = "false" ] && [ "$ENABLE_PUBLISH_ARTIFACTS" = "true" ]; then
-                . ci-tools ci-update-version
-                make compile-validate
-                make check-scala-compatibility
-              fi
-            - sem-trigger -p common -b master -f .semaphore/semaphore.yml
+            - echo $IS_PRIVATE_JOB
   - name: Tests
     dependencies: []
     task:
