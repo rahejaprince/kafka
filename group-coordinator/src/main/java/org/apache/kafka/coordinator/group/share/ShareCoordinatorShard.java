@@ -236,6 +236,8 @@ public class ShareCoordinatorShard implements CoordinatorShard<Record> {
     log.debug("Write request dump - {}", request);
     // records to write (with both key and value of snapshot type), response to caller
     // only one key will be there in the request by design
+
+    metricsShard.record(ShareCoordinatorMetrics.SHARE_COORDINATOR_WRITE_SENSOR_NAME);
     Optional<CoordinatorResult<WriteShareGroupStateResponseData, Record>> error = maybeGetWriteStateError(request);
     if (error.isPresent()) {
       return error.get();
@@ -398,5 +400,10 @@ public class ShareCoordinatorShard implements CoordinatorShard<Record> {
   // Visible for testing
   public ShareSnapshotValue getShareStateMapValue(String key) {
     return this.shareStateMap.get(key);
+  }
+
+  // Visible for testing
+  CoordinatorMetricsShard getMetricsShard() {
+    return metricsShard;
   }
 }
