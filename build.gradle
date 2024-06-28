@@ -373,7 +373,7 @@ subprojects {
             from components.java
           } else {
             apply plugin: 'com.github.johnrengelman.shadow'
-            project.shadow.component(mavenJava)
+            artifact shadowJar
 
             // Fix for avoiding inclusion of runtime dependencies marked as 'shadow' in MANIFEST Class-Path.
             // https://github.com/johnrengelman/shadow/issues/324
