@@ -1,3 +1,4 @@
+
 // Licensed to the Apache Software Foundation (ASF) under one or more
 // contributor license agreements.  See the NOTICE file distributed with
 // this work for additional information regarding copyright ownership.
@@ -45,7 +46,9 @@ plugins {
   id "com.github.spotbugs" version '5.1.3' apply false
   id 'org.gradle.test-retry' version '1.5.2' apply false
   id 'org.scoverage' version '8.0.3' apply false
-  id 'io.github.goooler.shadow' version '8.1.7' apply false
+  // Updating the shadow plugin version to 8.1.1 causes issue with signing and publishing the shadowed
+  // artifacts - see https://github.com/johnrengelman/shadow/issues/901
+  id 'com.github.johnrengelman.shadow' version '8.1.0' apply false
   //  Spotless 6.13.0 has issue with Java 21 (see https://github.com/diffplug/spotless/pull/1920), and Spotless 6.14.0+ requires JRE 11
   //  We are going to drop JDK8 support. Hence, the spotless is upgrade to newest version and be applied only if the build env is compatible with JDK 11.
   //  spotless 6.15.0+ has issue in runtime with JDK8 even through we define it with `apply:false`. see https://github.com/diffplug/spotless/issues/2156 for more details
@@ -370,7 +373,7 @@ subprojects {
           if (!shouldPublishWithShadow) {
             from components.java
           } else {
-            apply plugin: 'io.github.goooler.shadow'
+            apply plugin: 'com.github.johnrengelman.shadow'
             project.shadow.component(mavenJava)
 
             // Fix for avoiding inclusion of runtime dependencies marked as 'shadow' in MANIFEST Class-Path.
@@ -2966,7 +2969,7 @@ project(':streams:upgrade-system-tests-37') {
 
 project(':jmh-benchmarks') {
 
-  apply plugin: 'io.github.goooler.shadow'
+  apply plugin: 'com.github.johnrengelman.shadow'
 
   shadowJar {
     archiveBaseName = 'kafka-jmh-benchmarks'
