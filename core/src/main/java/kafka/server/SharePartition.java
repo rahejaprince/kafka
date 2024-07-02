@@ -1537,6 +1537,7 @@ public class SharePartition {
     // Visible for testing
      boolean isWriteShareGroupStateSuccessful(List<PersisterStateBatch> stateBatches) {
         try {
+            long time = Time.SYSTEM.hiResClockMs();
             WriteShareGroupStateResult response = persister.writeState(new WriteShareGroupStateParameters.Builder()
                 .setGroupTopicPartitionData(new GroupTopicPartitionData.Builder<PartitionStateBatchData>()
                     .setGroupId(this.groupId)
@@ -1544,6 +1545,7 @@ public class SharePartition {
                         Collections.singletonList(PartitionFactory.newPartitionStateBatchData(
                             topicIdPartition.partition(), stateEpoch, startOffset, 0, stateBatches))))
                     ).build()).build()).get();
+            log.info("Write state RPC took - {} ms", Time.SYSTEM.hiResClockMs() - time);
 
             if (response == null || response.topicsData() == null || response.topicsData().size() != 1) {
                 log.error("Failed to write the share group state for share partition: {}-{}. Invalid state found: {}",
