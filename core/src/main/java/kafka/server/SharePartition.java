@@ -873,6 +873,7 @@ public class SharePartition {
         // Initialize the partition by issuing an initialize RPC call to persister.
         ReadShareGroupStateResult response;
         try {
+            long time = Time.SYSTEM.hiResClockMs();
             response = persister.readState(new ReadShareGroupStateParameters.Builder()
                 .setGroupTopicPartitionData(new GroupTopicPartitionData.Builder<PartitionIdLeaderEpochData>()
                     .setGroupId(this.groupId)
@@ -881,6 +882,7 @@ public class SharePartition {
                     .build())
                 .build()
             ).get();
+            log.info("Read share state took - {} ms", Time.SYSTEM.hiResClockMs() - time);
 
             if (response == null || response.topicsData() == null || response.topicsData().size() != 1) {
                 log.error("Failed to initialize the share partition: {}-{}. Invalid state found: {}.",

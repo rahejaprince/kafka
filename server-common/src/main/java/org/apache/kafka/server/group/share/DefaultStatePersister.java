@@ -22,6 +22,7 @@ import org.apache.kafka.common.annotation.InterfaceStability;
 import org.apache.kafka.common.protocol.Errors;
 import org.apache.kafka.common.requests.ReadShareGroupStateResponse;
 import org.apache.kafka.common.requests.WriteShareGroupStateResponse;
+import org.apache.kafka.common.utils.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,7 +130,9 @@ public class DefaultStatePersister implements Persister {
     CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(futureMap.values().stream()
         .flatMap(partMap -> partMap.values().stream()).toArray(CompletableFuture[]::new));
 
+    long time = Time.SYSTEM.hiResClockMs();
     return combinedFuture.thenApply(v -> {
+      log.info("Write State all future completion took - {} ms", Time.SYSTEM.hiResClockMs() - time);
       List<TopicData<PartitionErrorData>> topicsData = futureMap.keySet().stream()
           .map(topicId -> {
             List<PartitionErrorData> partitionErrData = futureMap.get(topicId).entrySet().stream()
@@ -203,7 +206,9 @@ public class DefaultStatePersister implements Persister {
         .flatMap(map -> map.values().stream()).toArray(CompletableFuture[]::new));
 
     // Transform the combined CompletableFuture<Void> into CompletableFuture<ReadShareGroupStateResult>
+    long time = Time.SYSTEM.hiResClockMs();
     return combinedFuture.thenApply(v -> {
+      log.info("Read State all future completion took - {} ms", Time.SYSTEM.hiResClockMs() - time);
       List<TopicData<PartitionAllData>> topicsData = futureMap.keySet().stream()
           .map(topicId -> {
             List<PartitionAllData> partitionAllData = futureMap.get(topicId).entrySet().stream()
@@ -268,6 +273,7 @@ public class DefaultStatePersister implements Persister {
   }
 
   private static void validate(WriteShareGroupStateParameters params) {
+    long time = Time.SYSTEM.hiResClockMs();
     String prefix = "Write share group parameters";
     if (params == null) {
       throw new IllegalArgumentException(prefix + " cannot be null.");
@@ -277,9 +283,11 @@ public class DefaultStatePersister implements Persister {
     }
 
     validateGroupTopicPartitionData(prefix, params.groupTopicPartitionData());
+    log.info("Write share state validation took - {} ms", Time.SYSTEM.hiResClockMs() - time);
   }
 
   private static void validate(ReadShareGroupStateParameters params) {
+    long time = Time.SYSTEM.hiResClockMs();
     String prefix = "Read share group parameters";
     if (params == null) {
       throw new IllegalArgumentException(prefix + " cannot be null.");
@@ -289,6 +297,7 @@ public class DefaultStatePersister implements Persister {
     }
 
     validateGroupTopicPartitionData(prefix, params.groupTopicPartitionData());
+    log.info("Read share state validation took - {} ms", Time.SYSTEM.hiResClockMs() - time);
   }
 
   private static void validateGroupTopicPartitionData(String prefix, GroupTopicPartitionData<? extends PartitionIdData> data) {
