@@ -929,7 +929,6 @@ public class ShareConsumerTest {
             producerExecutorService.submit(() -> {
                 CompletableFuture<Integer> future = produceMessages(messagesPerProducer);
                 producerFutures.add(future);
-                System.out.println("Counting down " + producerCount);
                 startSignal.countDown();
             });
         }
@@ -1660,7 +1659,6 @@ public class ShareConsumerTest {
                 }
             }
         } finally {
-            System.out.println("Messages " + messagesSent);
             future.complete(messagesSent);
         }
         return future;
@@ -1686,7 +1684,6 @@ public class ShareConsumerTest {
                                  CompletableFuture<Integer> future) {
         KafkaShareConsumer<byte[], byte[]> shareConsumer = createShareConsumer(new ByteArrayDeserializer(), new ByteArrayDeserializer(), groupId);
         shareConsumer.subscribe(Collections.singleton(tp.topic()));
-        System.out.println("Subscribed " + tp + " group " + groupId + " consumer " + consumerNumber);
         int messagesConsumed = 0;
         int retries = 0;
         try {
@@ -1696,7 +1693,6 @@ public class ShareConsumerTest {
                     messagesConsumed += records.count();
                     totalMessagesConsumed.addAndGet(records.count());
                     retries++;
-                    System.out.println("Group " + groupId + " consumer " + consumerNumber + " consumed " + messagesConsumed);
                 }
             } else {
                 while (retries < maxPolls) {
