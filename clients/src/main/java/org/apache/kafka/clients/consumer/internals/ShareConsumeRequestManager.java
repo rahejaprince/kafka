@@ -575,7 +575,6 @@ public class ShareConsumeRequestManager implements RequestManager, MemberStateLi
                         metadata.topicNames().get(topic.topicId()));
                     metricsManager.recordFailedAcknowledgements(acknowledgeRequestState.getInFlightAcknowledgementsCount(tip));
                     acknowledgeRequestState.handleAcknowledgeErrorCode(tip, Errors.forException(error));
-                    acknowledgeRequestState.inFlightAcknowledgements.remove(tip);
             }));
         } finally {
             log.debug("Removing pending request for node {} - failed", fetchTarget);
@@ -599,7 +598,6 @@ public class ShareConsumeRequestManager implements RequestManager, MemberStateLi
                     metricsManager.recordFailedAcknowledgements(acknowledgeRequestState.getInFlightAcknowledgementsCount(tip));
                 }
                 acknowledgeRequestState.handleAcknowledgeErrorCode(tip, Errors.forCode(partition.errorCode()));
-                acknowledgeRequestState.inFlightAcknowledgements.remove(tip);
             }));
 
             metricsManager.recordLatency(resp.requestLatencyMs());
@@ -625,7 +623,6 @@ public class ShareConsumeRequestManager implements RequestManager, MemberStateLi
                         metadata.topicNames().get(topic.topicId()));
                 metricsManager.recordFailedAcknowledgements(acknowledgeRequestState.getInFlightAcknowledgementsCount(tip));
                 acknowledgeRequestState.handleAcknowledgeErrorCode(tip, Errors.forException(error));
-                acknowledgeRequestState.inFlightAcknowledgements.remove(tip);
             }));
         } finally {
             log.debug("Removing pending request for node {} - failed", fetchTarget);
@@ -837,10 +834,6 @@ public class ShareConsumeRequestManager implements RequestManager, MemberStateLi
         void retryRequest() {
             incompleteAcknowledgements.putAll(inFlightAcknowledgements);
             inFlightAcknowledgements.clear();
-        }
-
-        boolean isIncompleteMapEmpty() {
-            return incompleteAcknowledgements.isEmpty();
         }
 
         boolean maybeExpire() {
