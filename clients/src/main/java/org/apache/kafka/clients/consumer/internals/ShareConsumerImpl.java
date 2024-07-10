@@ -586,6 +586,7 @@ public class ShareConsumerImpl<K, V> implements ShareConsumerDelegate<K, V> {
 
                 final ShareFetch<K, V> fetch = pollForFetches(timer);
                 if (!fetch.isEmpty()) {
+                    log.warn("Update CurrentFetch: " + fetch.records().values().stream().findFirst().get().size());
                     currentFetch = fetch;
                     return new ConsumerRecords<>(fetch.records());
                 }
@@ -607,7 +608,7 @@ public class ShareConsumerImpl<K, V> implements ShareConsumerDelegate<K, V> {
         long pollTimeout = Math.min(applicationEventHandler.maximumTimeToWait(), timer.remainingMs());
 
         Map<TopicIdPartition, Acknowledgements> acknowledgementsMap = currentFetch.takeAcknowledgedRecords();
-
+        log.warn("TAKEACKS : While polling : {}", acknowledgementsMap);
         // If data is available already, return it immediately
         final ShareFetch<K, V> fetch = collect(acknowledgementsMap);
         if (!fetch.isEmpty()) {
@@ -702,6 +703,7 @@ public class ShareConsumerImpl<K, V> implements ShareConsumerDelegate<K, V> {
 
             Timer requestTimer = time.timer(timeout.toMillis());
             Map<TopicIdPartition, Acknowledgements> acknowledgementsMap = acknowledgementsToSend();
+            log.warn("TAKEACKS : COMMIT-SYNC : {}", acknowledgementsMap);
             if (acknowledgementsMap.isEmpty()) {
                 return Collections.emptyMap();
             } else {
@@ -750,6 +752,7 @@ public class ShareConsumerImpl<K, V> implements ShareConsumerDelegate<K, V> {
             acknowledgeBatchIfImplicitAcknowledgement(false);
 
             Map<TopicIdPartition, Acknowledgements> acknowledgementsMap = acknowledgementsToSend();
+            log.warn("TAKEACKS : COMMIT-ASYNC : {}", acknowledgementsMap);
             if (!acknowledgementsMap.isEmpty()) {
                 ShareAcknowledgeAsyncEvent event = new ShareAcknowledgeAsyncEvent(acknowledgementsMap);
                 applicationEventHandler.add(event);

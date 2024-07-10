@@ -91,6 +91,8 @@ public class ShareFetchBuffer implements AutoCloseable {
         lock.lock();
         try {
             completedFetches.add(fetch);
+            assert completedFetches.peek() != null;
+            log.warn("Adding to BUFFER : {}", completedFetches.peek().partitionData);
             notEmptyCondition.signalAll();
         } finally {
             lock.unlock();

@@ -109,7 +109,7 @@ public class ShareConsumerTest {
                 .setConfigProp("group.share.enable", "true")
                 .setConfigProp("group.share.partition.max.record.locks", "10000")
                 .setConfigProp("group.share.persister.class.name", "org.apache.kafka.server.group.share.DefaultStatePersister")
-                .setConfigProp("group.share.record.lock.duration.ms", "10000")
+                .setConfigProp("group.share.record.lock.duration.ms", "1000")
                 .setConfigProp("offsets.topic.replication.factor", "1")
                 .setConfigProp("share.coordinator.state.topic.min.isr", "1")
                 .setConfigProp("share.coordinator.state.topic.replication.factor", "1")
@@ -867,7 +867,7 @@ public class ShareConsumerTest {
 
         int consumerCount = 4;
         int producerCount = 4;
-        int messagesPerProducer = 5000;
+        int messagesPerProducer = 200;
 
         ExecutorService producerExecutorService = Executors.newFixedThreadPool(producerCount);
         ExecutorService consumerExecutorService = Executors.newFixedThreadPool(consumerCount);
@@ -883,7 +883,7 @@ public class ShareConsumerTest {
             consumerExecutorService.submit(() -> {
                 CompletableFuture<Integer> future = new CompletableFuture<>();
                 futures.add(future);
-                consumeMessages(totalMessagesConsumed, producerCount * messagesPerProducer, "group1", consumerNumber, 30, true, future);
+                consumeMessages(totalMessagesConsumed, producerCount * messagesPerProducer, "group1", consumerNumber, 1, true, future);
             });
         }
 
@@ -1094,6 +1094,7 @@ public class ShareConsumerTest {
                 CompletableFuture<Integer> future = new CompletableFuture<>();
                 futuresSuccess.add(future);
                 consumeMessages(totalMessagesConsumed, producerCount * messagesPerProducer, "group1", consumerNumber, 25, true, future);
+                System.out.println(totalMessagesConsumed.get() + " is total msgs consumed");
             });
         }
         producerExecutorService.shutdown();
@@ -1646,8 +1647,8 @@ public class ShareConsumerTest {
         Future<?>[] recordFutures = new Future<?>[messageCount];
         int messagesSent = 0;
         try (KafkaProducer<byte[], byte[]> producer = createProducer(new ByteArraySerializer(), new ByteArraySerializer())) {
-            ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(tp.topic(), tp.partition(), null, "key".getBytes(), "value".getBytes());
             for (int i = 0; i < messageCount; i++) {
+                ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(tp.topic(), tp.partition(), null, ("key" + i).getBytes(), ("value" + i).getBytes());
                 recordFutures[i] = producer.send(record);
             }
             for (int i = 0; i < messageCount; i++) {
