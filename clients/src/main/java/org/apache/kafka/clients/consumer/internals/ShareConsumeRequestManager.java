@@ -165,7 +165,6 @@ public class ShareConsumeRequestManager implements RequestManager, MemberStateLi
                 if (acknowledgementsToSend != null) {
                     metricsManager.recordAcknowledgementSent(acknowledgementsToSend.size());
                 }
-                log.warn("SHARE_FETCH-- acksToSend is : {}", acknowledgementsToSend);
                 handler.addPartitionToFetch(tip, acknowledgementsToSend);
 
                 log.debug("Added fetch request for partition {} to node {}", partition, node);
@@ -202,7 +201,7 @@ public class ShareConsumeRequestManager implements RequestManager, MemberStateLi
             fetchMoreRecords = true;
         }
         acknowledgementsMap.forEach((tip, acks) -> fetchAcknowledgementsMap.merge(tip, acks, Acknowledgements::merge));
-        log.warn("Going to fetch with piggy acks = {}", fetchAcknowledgementsMap);
+        log.warn("Going to fetch with piggy back acks = {}", fetchAcknowledgementsMap);
     }
 
     /**
@@ -215,7 +214,6 @@ public class ShareConsumeRequestManager implements RequestManager, MemberStateLi
     private PollResult processAcknowledgements(long currentTimeMs) {
         List<UnsentRequest> unsentRequests = new ArrayList<>();
         for (Map.Entry<AcknowledgeRequestState, AcknowledgeRequestState> requestStates : acknowledgeRequestStates.values()) {
-            //log.warn("STARTING ARRAY EXPLORE");
             // For commitAsync
             maybeBuildRequest(requestStates.getKey(), currentTimeMs).ifPresent(unsentRequests::add);
             // For commitSync
@@ -251,7 +249,6 @@ public class ShareConsumeRequestManager implements RequestManager, MemberStateLi
             }
         } else {
             // Fill in TimeoutException
-            System.out.println("SCRM : Filling in timeout exception" + acknowledgeRequestState.incompleteAcknowledgements);
             for (TopicIdPartition tip : acknowledgeRequestState.incompleteAcknowledgements.keySet()) {
                 metricsManager.recordFailedAcknowledgements(acknowledgeRequestState.getIncompleteAcknowledgementsCount(tip));
                 acknowledgeRequestState.handleAcknowledgeErrorCode(tip, Errors.REQUEST_TIMED_OUT);
@@ -375,11 +372,9 @@ public class ShareConsumeRequestManager implements RequestManager, MemberStateLi
                                     this::handleShareAcknowledgeFailure,
                                     resultHandler
                             ), acknowledgeRequestStates.get(nodeId).getValue()));
-                            //log.warn("SCRM: COMMIT-ASYNC : IF CASE - AFTER CREATING, ACKS : {}", acknowledgeRequestStates.get(nodeId).get(0));
                         } else {
                             acknowledgeRequestStates.get(nodeId).getKey().acknowledgementsToSend.putIfAbsent(tip, acknowledgements);
                             acknowledgeRequestStates.get(nodeId).getKey().acknowledgementsToSend.get(tip).merge(acknowledgements);
-                            //log.warn("SCRM: COMMIT-ASYNC : ELSE CASE - AFTER MERGING, ACKS : {}", acknowledgeRequestStates.get(nodeId).get(0));
                         }
                     }
                 }
@@ -586,7 +581,7 @@ public class ShareConsumeRequestManager implements RequestManager, MemberStateLi
                     }
                     acknowledgeRequestState.handleAcknowledgeErrorCode(tip, Errors.forCode(partition.errorCode()));
                 }));
-                log.warn("SHARE-ACK-SUCCESS : {}", response);
+                log.warn("SHARE-ACK-SUCCESS : {}", response.data());
                 acknowledgeRequestState.processingComplete();
             }
 
@@ -793,7 +788,7 @@ public class ShareConsumeRequestManager implements RequestManager, MemberStateLi
                     incompleteAcknowledgements.isEmpty() ? acknowledgementsToSend : incompleteAcknowledgements);
 
             for (Map.Entry<TopicIdPartition, Acknowledgements> entry : finalAcknowledgementsToSend.entrySet()) {
-                log.warn("SHARE_ACK_BR-- finalAcksToSend is : {}", acknowledgementsToSend);
+                log.warn("SHARE_ACKNOWLEDGE-- finalAcksToSend is : {}", acknowledgementsToSend);
                 sessionHandler.addPartitionToFetch(entry.getKey(), entry.getValue());
             }
 
@@ -881,7 +876,7 @@ public class ShareConsumeRequestManager implements RequestManager, MemberStateLi
         }
 
         void processingComplete() {
-            //log.warn("at proc complete : {}", inFlightAcknowledgements);
+            log.warn("Clients : Acknowledgement Success : {}", inFlightAcknowledgements);
             incompleteAcknowledgements.clear();
             inFlightAcknowledgements.clear();
             resultHandler.completeIfEmpty();
