@@ -867,7 +867,7 @@ public class ShareConsumerTest {
 
         int consumerCount = 4;
         int producerCount = 4;
-        int messagesPerProducer = 200;
+        int messagesPerProducer = 5000;
 
         ExecutorService producerExecutorService = Executors.newFixedThreadPool(producerCount);
         ExecutorService consumerExecutorService = Executors.newFixedThreadPool(consumerCount);
@@ -883,7 +883,7 @@ public class ShareConsumerTest {
             consumerExecutorService.submit(() -> {
                 CompletableFuture<Integer> future = new CompletableFuture<>();
                 futures.add(future);
-                consumeMessages(totalMessagesConsumed, producerCount * messagesPerProducer, "group1", consumerNumber, 1, true, future);
+                consumeMessages(totalMessagesConsumed, producerCount * messagesPerProducer, "group1", consumerNumber, 30, true, future);
             });
         }
 
@@ -1711,6 +1711,7 @@ public class ShareConsumerTest {
         } catch (Exception e) {
             fail("Consumer " + consumerNumber + " failed with exception: " + e);
         } finally {
+            shareConsumer.commitAsync();
             shareConsumer.close();
             future.complete(messagesConsumed);
         }
