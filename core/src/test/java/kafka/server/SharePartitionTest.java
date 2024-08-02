@@ -6329,6 +6329,29 @@ public class SharePartitionTest {
         Mockito.verify(sharePartition, Mockito.times(1)).isWriteShareGroupStateSuccessful(anyList());
     }
 
+    @Test
+    public void testInitializeWhenReadStateRpcReturnsZeroAvailableRecords() {
+        List<PersisterStateBatch> stateBatches = new ArrayList<>();
+        for (int i = 0; i < 500; i++) {
+            stateBatches.add(new PersisterStateBatch(234L + i, 234L + i, RecordState.ACKNOWLEDGED.id, (short) 1));
+        }
+        stateBatches.add(new PersisterStateBatch(232L, 232L, RecordState.ARCHIVED.id, (short) 1));
+
+        Persister persister = Mockito.mock(Persister.class);
+        ReadShareGroupStateResult readShareGroupStateResult = Mockito.mock(ReadShareGroupStateResult.class);
+        Mockito.when(readShareGroupStateResult.topicsData()).thenReturn(Collections.singletonList(
+                new TopicData<>(TOPIC_ID_PARTITION.topicId(), Collections.singletonList(
+                        PartitionFactory.newPartitionAllData(0, 3, 232L, Errors.NONE.code(), Errors.NONE.message(),
+                                stateBatches)))));
+        Mockito.when(persister.readState(Mockito.any())).thenReturn(CompletableFuture.completedFuture(readShareGroupStateResult));
+        SharePartition sharePartition = SharePartitionBuilder.builder().withPersister(persister).build();
+
+        assertTrue(sharePartition.cachedState().isEmpty());
+        assertEquals(734, sharePartition.nextFetchOffset());
+        assertEquals(734, sharePartition.startOffset());
+        assertEquals(734, sharePartition.endOffset());
+    }
+
     private MemoryRecords memoryRecords(int numOfRecords) {
         return memoryRecords(numOfRecords, 0);
     }

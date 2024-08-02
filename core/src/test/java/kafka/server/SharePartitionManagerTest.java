@@ -84,6 +84,7 @@ import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -105,6 +106,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeast;
 import static org.mockito.internal.verification.VerificationModeFactory.atMost;
 
@@ -2038,6 +2040,44 @@ public class SharePartitionManagerTest {
         Mockito.verify(sp1, times(0)).updateOffsetsOnLsoMovement();
     }
 
+    @Test
+    public void testFetchQueueProcessingWhenFrontItemIsEmpty() {
+        String groupId = "grp";
+        String memberId = Uuid.randomUuid().toString();
+        FetchParams fetchParams = new FetchParams(ApiKeys.SHARE_FETCH.latestVersion(), FetchRequest.ORDINARY_CONSUMER_ID, -1, 0,
+                1, 1024 * 1024, FetchIsolation.HIGH_WATERMARK, Optional.empty());
+        TopicIdPartition tp0 = new TopicIdPartition(Uuid.randomUuid(), new TopicPartition("foo", 0));
+        Map<TopicIdPartition, Integer> partitionMaxBytes = new HashMap<>();
+        partitionMaxBytes.put(tp0, PARTITION_MAX_BYTES);
+
+        SharePartitionManager.ShareFetchPartitionData shareFetchPartitionData1 = new SharePartitionManager.ShareFetchPartitionData(
+                fetchParams, groupId, memberId, Collections.emptyList(), new CompletableFuture<>(), partitionMaxBytes);
+        SharePartitionManager.ShareFetchPartitionData shareFetchPartitionData2 = new SharePartitionManager.ShareFetchPartitionData(
+                fetchParams, groupId, memberId, Collections.singletonList(tp0), new CompletableFuture<>(), partitionMaxBytes);
+
+        final Time time = new MockTime();
+        ReplicaManager replicaManager = mock(ReplicaManager.class);
+
+        Map<SharePartitionManager.SharePartitionKey, SharePartition> partitionCacheMap = new ConcurrentHashMap<>();
+        partitionCacheMap.computeIfAbsent(new SharePartitionManager.SharePartitionKey(groupId, tp0),
+                k -> new SharePartition(groupId, tp0, MAX_DELIVERY_COUNT, MAX_IN_FLIGHT_MESSAGES,
+                        RECORD_LOCK_DURATION_MS, mockTimer, time, persister, replicaManager));
+
+        ConcurrentLinkedQueue<SharePartitionManager.ShareFetchPartitionData> fetchQueue = new ConcurrentLinkedQueue<>();
+        // First request added to fetchQueue is empty i.e. it does not contain any topic partition.
+        fetchQueue.add(shareFetchPartitionData1);
+        // Second request added to fetchQueue contains a topic partition.
+        fetchQueue.add(shareFetchPartitionData2);
+
+        SharePartitionManager sharePartitionManager = SharePartitionManagerBuilder.builder()
+                .withPartitionCacheMap(partitionCacheMap).withReplicaManager(replicaManager)
+                .withTime(time).withFetchQueue(fetchQueue).build();
+        sharePartitionManager.maybeProcessFetchQueue();
+
+        // Verifying second request gets processed even though first request is empty.
+        verify(replicaManager, times(1)).fetchMessages(any(), any(), any(ReplicaQuota.class), any());
+    }
+
     private static class SharePartitionManagerBuilder {
         private ReplicaManager replicaManager = mock(ReplicaManager.class);
         private Time time = new MockTime();
@@ -2045,6 +2085,7 @@ public class SharePartitionManagerTest {
         private Map<SharePartitionManager.SharePartitionKey, SharePartition> partitionCacheMap = new HashMap<>();
         private Persister persister = null;
         private Metrics metrics = new Metrics();
+        private ConcurrentLinkedQueue<SharePartitionManager.ShareFetchPartitionData> fetchQueue = new ConcurrentLinkedQueue<>();
 
         private SharePartitionManagerBuilder withReplicaManager(ReplicaManager replicaManager) {
             this.replicaManager = replicaManager;
@@ -2076,11 +2117,16 @@ public class SharePartitionManagerTest {
             return this;
         }
 
+        private SharePartitionManagerBuilder withFetchQueue(ConcurrentLinkedQueue<SharePartitionManager.ShareFetchPartitionData> fetchQueue) {
+            this.fetchQueue = fetchQueue;
+            return this;
+        }
+
         public static SharePartitionManagerBuilder builder() {
             return new SharePartitionManagerBuilder();
         }
         public SharePartitionManager build() {
-            return new SharePartitionManager(replicaManager, time, cache, partitionCacheMap, RECORD_LOCK_DURATION_MS, MAX_DELIVERY_COUNT, MAX_IN_FLIGHT_MESSAGES, persister, metrics);
+            return new SharePartitionManager(replicaManager, time, cache, partitionCacheMap, fetchQueue, RECORD_LOCK_DURATION_MS, MAX_DELIVERY_COUNT, MAX_IN_FLIGHT_MESSAGES, persister, metrics);
         }
     }
 }
