@@ -64,5 +64,8 @@ export KAFKA_JVM_PERFORMANCE_OPTS="$TEMP_KAFKA_JVM_PERFORMANCE_OPTS"
 # Now we will use CDS for kafka to start kafka server
 export KAFKA_JVM_PERFORMANCE_OPTS="$KAFKA_JVM_PERFORMANCE_OPTS -XX:SharedArchiveFile=/opt/kafka/kafka.jsa"
 
+# Adding JFR reporting
+export KAFKA_JVM_PERFORMANCE_OPTS="$KAFKA_JVM_PERFORMANCE_OPTS -XX:StartFlightRecording=filename=/tmp/recording.jfr,duration=10m,settings=profile"
+
 # Start kafka broker
 exec /opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/server.properties

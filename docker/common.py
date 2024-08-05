@@ -44,3 +44,18 @@ def jvm_image(command):
         raise SystemError("Docker Image Build failed")
     finally:
         shutil.rmtree(temp_dir_path)
+
+def jvm_local_image(command):
+    temp_dir_path = tempfile.mkdtemp()
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    copy_tree(f"{current_dir}/jvm", f"{temp_dir_path}/jvm")
+    copy_tree(f"{current_dir}/resources", f"{temp_dir_path}/jvm/resources")
+    command = command.replace("$DOCKER_FILE", f"{temp_dir_path}/jvm/local/Dockerfile")
+    command = command.replace("$DOCKER_DIR", f"{temp_dir_path}/jvm")
+    try:
+        execute(command.split())
+    except:
+        raise SystemError("Docker Image Build failed")
+    finally:
+        shutil.rmtree(temp_dir_path)
+

@@ -37,13 +37,18 @@ import argparse
 from distutils.dir_util import copy_tree
 import shutil
 from test.docker_sanity_test import run_tests
-from common import execute, jvm_image
+from common import execute, jvm_image, jvm_local_image
 import tempfile
 import os
 
 def build_jvm(image, tag, kafka_url):
     image = f'{image}:{tag}'
     jvm_image(f"docker build -f $DOCKER_FILE -t {image} --build-arg kafka_url={kafka_url} --build-arg build_date={date.today()} $DOCKER_DIR")
+
+def build_jvm_with_local_tar(image, tag, kafka_tar_path):
+    image = f'{image}:{tag}'
+    jvm_local_image(f"docker build -f $DOCKER_FILE -t {image} --build-arg kafka_tar_path={kafka_tar_path} "
+                    f"--build-arg build_date={date.today()} $DOCKER_DIR")
 
 def run_jvm_tests(image, tag, kafka_url):
     temp_dir_path = tempfile.mkdtemp()
@@ -70,6 +75,7 @@ if __name__ == '__main__':
     parser.add_argument("--image-tag", "-tag", default="latest", dest="tag", help="Image tag that you want to add to the image")
     parser.add_argument("--image-type", "-type", choices=["jvm"], default="jvm", dest="image_type", help="Image type you want to build")
     parser.add_argument("--kafka-url", "-u", dest="kafka_url", help="Kafka url to be used to download kafka binary tarball in the docker image")
+    parser.add_argument("--kafka-tar", dest="kafka_tar_path", help="Kafka tarball file path")
     parser.add_argument("--build", "-b", action="store_true", dest="build_only", default=False, help="Only build the image, don't run tests")
     parser.add_argument("--test", "-t", action="store_true", dest="test_only", default=False, help="Only run the tests, don't build the image")
     args = parser.parse_args()
@@ -78,7 +84,7 @@ if __name__ == '__main__':
         if args.kafka_url:
             build_jvm(args.image, args.tag, args.kafka_url)
         else:
-            raise ValueError("--kafka-url is a required argument for jvm image")
-    
+            build_jvm_with_local_tar(args.image, args.tag, args.kafka_tar_path)
+
     if args.image_type == "jvm" and (args.test_only or not (args.build_only or args.test_only)):
         run_jvm_tests(args.image, args.tag, args.kafka_url)
