@@ -78,7 +78,10 @@ public class ShareConsumerPerformance {
             }
             shareConsumers.forEach(shareConsumer -> {
                 shareConsumer.commitAsync();
-                shareConsumer.close();
+                // Since we have already set a timeout for record fetch, we can close the consumer now. If we don't
+                // provide a duration for close, it will wait for DEFAULT_CLOSE_TIMEOUT_MS which can be huge,
+                // hence providing a minimalistic value for close duration as 10 ms.
+                shareConsumer.close(Duration.ofMillis(10));
             });
 
             // Print final stats for share group.
