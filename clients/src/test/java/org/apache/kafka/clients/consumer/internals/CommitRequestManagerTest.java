@@ -688,7 +688,7 @@ public class CommitRequestManagerTest {
     }
 
     private boolean isRetriableOnOffsetFetch(Errors error) {
-        return error == Errors.NOT_COORDINATOR || error == Errors.COORDINATOR_LOAD_IN_PROGRESS || error == Errors.COORDINATOR_NOT_AVAILABLE;
+        return error.exception() instanceof RetriableException;
     }
 
     @Test

@@ -1003,6 +1003,8 @@ public class CommitRequestManager implements RequestManager, MemberStateListener
                 // Re-discover the coordinator and retry
                 coordinatorRequestManager.markCoordinatorUnknown("error response " + responseError.name(), currentTimeMs);
                 future.completeExceptionally(responseError.exception());
+            } else if (responseError.exception() instanceof RetriableException) {
+                future.completeExceptionally(responseError.exception());
             } else if (responseError == Errors.GROUP_AUTHORIZATION_FAILED) {
                 future.completeExceptionally(GroupAuthorizationException.forGroupId(groupId));
             } else {
