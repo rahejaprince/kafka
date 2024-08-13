@@ -43,6 +43,8 @@ import org.apache.kafka.coordinator.group.generated.ShareGroupMemberMetadataKey;
 import org.apache.kafka.coordinator.group.generated.ShareGroupMemberMetadataValue;
 import org.apache.kafka.coordinator.group.generated.ShareSnapshotKey;
 import org.apache.kafka.coordinator.group.generated.ShareSnapshotValue;
+import org.apache.kafka.coordinator.group.generated.ShareUpdateKey;
+import org.apache.kafka.coordinator.group.generated.ShareUpdateValue;
 import org.apache.kafka.coordinator.group.share.ShareCoordinator;
 import org.apache.kafka.coordinator.group.share.ShareGroupMember;
 import org.apache.kafka.coordinator.group.share.ShareGroupOffset;
@@ -653,11 +655,11 @@ public class RecordHelpers {
                 .setPartition(partitionId),
                 ShareCoordinator.SHARE_SNAPSHOT_RECORD_KEY_VERSION),
             new ApiMessageAndVersion(new ShareSnapshotValue()
-                .setSnapshotEpoch(offsetData.snapshotEpoch)
-                .setStateEpoch(offsetData.stateEpoch)
-                .setLeaderEpoch(offsetData.leaderEpoch)
-                .setStartOffset(offsetData.startOffset)
-                .setStateBatches(offsetData.stateBatches.stream()
+                .setSnapshotEpoch(offsetData.snapshotEpoch())
+                .setStateEpoch(offsetData.stateEpoch())
+                .setLeaderEpoch(offsetData.leaderEpoch())
+                .setStartOffset(offsetData.startOffset())
+                .setStateBatches(offsetData.stateBatches().stream()
                     .map(batch -> new ShareSnapshotValue.StateBatch()
                         .setFirstOffset(batch.firstOffset())
                         .setLastOffset(batch.lastOffset())
@@ -665,6 +667,28 @@ public class RecordHelpers {
                         .setDeliveryState(batch.deliveryState()))
                     .collect(Collectors.toList())),
                 ShareCoordinator.SHARE_SNAPSHOT_RECORD_VALUE_VERSION)
+        );
+    }
+
+    public static Record newShareSnapshotUpdateRecord(String groupId, Uuid topicId, int partitionId, ShareGroupOffset offsetData) {
+        return new Record(
+                new ApiMessageAndVersion(new ShareUpdateKey()
+                        .setGroupId(groupId)
+                        .setTopicId(topicId)
+                        .setPartition(partitionId),
+                        ShareCoordinator.SHARE_UPDATE_RECORD_KEY_VERSION),
+                new ApiMessageAndVersion(new ShareUpdateValue()
+                        .setSnapshotEpoch(offsetData.snapshotEpoch())
+                        .setLeaderEpoch(offsetData.leaderEpoch())
+                        .setStartOffset(offsetData.startOffset())
+                        .setStateBatches(offsetData.stateBatches().stream()
+                                .map(batch -> new ShareUpdateValue.StateBatch()
+                                        .setFirstOffset(batch.firstOffset())
+                                        .setLastOffset(batch.lastOffset())
+                                        .setDeliveryCount(batch.deliveryCount())
+                                        .setDeliveryState(batch.deliveryState()))
+                                .collect(Collectors.toList())),
+                        ShareCoordinator.SHARE_UPDATE_RECORD_VALUE_VERSION)
         );
     }
 

@@ -180,6 +180,7 @@ public class Defaults {
     public static final int SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR = 2;
     public static final int SHARE_COORDINATOR_NUM_THREADS = 1;
     public static final String DEFAULT_SHARE_GROUP_PERSISTER_CLASS_NAME = "org.apache.kafka.server.group.share.DefaultStatePersister";
+    public static final int SHARE_COORDINATOR_SNAPSHOT_UPDATE_RECORDS_PER_SNAPSHOT = 500;
 
     /** ********* Offset management configuration *********/
     public static final int OFFSET_METADATA_MAX_SIZE = OffsetConfig.DEFAULT_MAX_METADATA_SIZE;

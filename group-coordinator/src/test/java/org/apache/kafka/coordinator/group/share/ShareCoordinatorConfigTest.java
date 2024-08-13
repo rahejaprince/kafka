@@ -26,23 +26,27 @@ class ShareCoordinatorConfigTest {
     ShareCoordinatorConfig config = new ShareCoordinatorConfig(
        1000,
         1,
-        5000
+        5000,
+        50
     );
 
     assertEquals(1000, config.shareCoordinatorStateTopicSegmentBytes);
     assertEquals(1, config.numThreads);
     assertEquals(5000, config.writeTimeoutMs);
+    assertEquals(50, config.snapshotUpdateRecordsPerSnapshot);
   }
 
   public static ShareCoordinatorConfig createShareCoordinatorConfig(
       int stateTopicSegmentBytes,
       int numThreads,
-      int writeTimeoutMs
+      int writeTimeoutMs,
+      int snapshotUpdateThreshold
   ) {
     return new ShareCoordinatorConfig(
         stateTopicSegmentBytes,
         numThreads,
-        writeTimeoutMs
+        writeTimeoutMs,
+        snapshotUpdateThreshold
     );
   }
 }

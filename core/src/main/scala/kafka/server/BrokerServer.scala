@@ -651,7 +651,8 @@ class BrokerServer(
       config.shareCoordinatorStateTopicSegmentBytes,
       config.shareCoordinatorNumThreads,
       //todo smjn: should we redefine for share coord?
-      config.offsetCommitTimeoutMs)
+      config.offsetCommitTimeoutMs,
+      config.shareCoordinatorSnapshotUpdateRecordsPerSnapshot)
 
     val timer = new SystemTimerReaper(
       "share-coordinator-reaper",

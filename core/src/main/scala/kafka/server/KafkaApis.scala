@@ -4808,8 +4808,8 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     authHelper.authorizeClusterOperation(request, CLUSTER_ACTION)
 
-    val writeShareData = shareCoordinator.writeState(request.context, writeShareRequest.data).get()
-    requestHelper.sendMaybeThrottle(request, new WriteShareGroupStateResponse(writeShareData))
+    shareCoordinator.writeState(request.context, writeShareRequest.data)
+      .thenAccept(data => requestHelper.sendMaybeThrottle(request, new WriteShareGroupStateResponse(data)))
   }
 
   private def handleReadShareGroupState(request: RequestChannel.Request): Unit = {
@@ -4817,8 +4817,8 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     authHelper.authorizeClusterOperation(request, CLUSTER_ACTION)
 
-    val readShareData = shareCoordinator.readState(request.context, readShareGroupStateRequest.data).get()
-    requestHelper.sendMaybeThrottle(request, new ReadShareGroupStateResponse(readShareData))
+    shareCoordinator.readState(request.context, readShareGroupStateRequest.data)
+      .thenAccept(data => requestHelper.sendMaybeThrottle(request, new ReadShareGroupStateResponse(data)))
   }
 
   private def updateRecordConversionStats(request: RequestChannel.Request,

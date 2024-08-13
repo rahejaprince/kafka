@@ -65,7 +65,8 @@ class ShareCoordinatorServiceTest {
     return new ShareCoordinatorConfig(
         1000,
         1,
-        5000
+        5000,
+        50
     );
   }
 

@@ -274,6 +274,7 @@ object KafkaConfig {
   val ShareCoordinatorStateTopicSegmentBytesProp = "share.coordinator.state.topic.segment.bytes"
   val ShareCoordinatorStateTopicMinISRProp = "share.coordinator.state.topic.min.isr"
   val ShareCoordinatorNumThreadsProp = "share.coordinator.threads"
+  val ShareCoordinatorSnapshotUpdateRecordsPerSnapshotProp = "share.coordinator.snapshot.update.records.per.snapshot"
 
 
   /** ********* Offset management configuration ***********/
@@ -726,6 +727,7 @@ object KafkaConfig {
   val ShareCoordinatorStateTopicSegmentBytesDoc = "The log segment size for the share-group state topic."
   val ShareCoordinatorStateTopicMinISRDoc = "Overridden min.insync.replicas for the share-group state topic."
   val ShareCoordinatorNumThreadsDoc = "The number of threads used by the share coordinator."
+  val ShareCoordinatorSnapshotUpdateRecordsPerSnapshotDoc = "Number of snapshot update records per share snapshot record."
 
   /** ********* Offset management configuration ***********/
   val OffsetMetadataMaxSizeDoc = "The maximum size for a metadata entry associated with an offset commit."
@@ -1121,6 +1123,7 @@ object KafkaConfig {
       .define(ShareCoordinatorStateTopicSegmentBytesProp, INT, Defaults.SHARE_COORDINATOR_STATE_TOPIC_SEGMENT_BYTES, atLeast(1), HIGH, ShareCoordinatorStateTopicSegmentBytesDoc)
       .define(ShareCoordinatorStateTopicMinISRProp, INT, Defaults.SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR, atLeast(1), HIGH, ShareCoordinatorStateTopicMinISRDoc)
       .define(ShareCoordinatorNumThreadsProp, INT, Defaults.SHARE_COORDINATOR_NUM_THREADS, atLeast(1), MEDIUM, ShareCoordinatorNumThreadsDoc)
+      .defineInternal(ShareCoordinatorSnapshotUpdateRecordsPerSnapshotProp, INT, Defaults.SHARE_COORDINATOR_SNAPSHOT_UPDATE_RECORDS_PER_SNAPSHOT, atLeast(0), MEDIUM, ShareCoordinatorSnapshotUpdateRecordsPerSnapshotDoc)
 
       /** ********* Offset management configuration ***********/
       .define(OffsetMetadataMaxSizeProp, INT, Defaults.OFFSET_METADATA_MAX_SIZE, HIGH, OffsetMetadataMaxSizeDoc)
@@ -1807,6 +1810,7 @@ class KafkaConfig private(doLog: Boolean, val props: java.util.Map[_, _], dynami
   val shareCoordinatorStateTopicSegmentBytes = getInt(KafkaConfig.ShareCoordinatorStateTopicSegmentBytesProp)
   val shareCoordinatorStateTopicMinISR = getInt(KafkaConfig.ShareCoordinatorStateTopicMinISRProp)
   val shareCoordinatorNumThreads = getInt(KafkaConfig.ShareCoordinatorNumThreadsProp)
+  val shareCoordinatorSnapshotUpdateRecordsPerSnapshot = getInt(KafkaConfig.ShareCoordinatorSnapshotUpdateRecordsPerSnapshotProp)
 
 
   /** ********* Offset management configuration ***********/

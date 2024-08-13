@@ -21,11 +21,11 @@
   "validVersions": "1",
   "flexibleVersions": "none",
   "fields": [
-    { "name": "GroupId", "type": "string", "versions": "0",
+    { "name": "GroupId", "type": "string", "versions": "1",
       "about": "The group id." },
-    { "name": "TopicId", "type": "uuid", "versions": "0",
+    { "name": "TopicId", "type": "uuid", "versions": "1",
       "about": "The topic id." },
-    { "name": "Partition", "type": "int32", "versions": "0",
+    { "name": "Partition", "type": "int32", "versions": "1",
       "about": "The partition index." }
   ]
 }

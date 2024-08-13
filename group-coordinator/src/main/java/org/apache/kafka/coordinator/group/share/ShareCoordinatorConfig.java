@@ -21,13 +21,16 @@ public class ShareCoordinatorConfig {
   public final int shareCoordinatorStateTopicSegmentBytes;
   public final int numThreads;
   public final int writeTimeoutMs;
+  public final int snapshotUpdateRecordsPerSnapshot;
 
   public ShareCoordinatorConfig(
       int shareCoordinatorStateTopicSegmentBytes,
       int numThreads,
-      int writeTimeoutMs) {
+      int writeTimeoutMs,
+      int snapshotUpdateRecordsPerSnapshot) {
     this.shareCoordinatorStateTopicSegmentBytes = shareCoordinatorStateTopicSegmentBytes;
     this.numThreads = numThreads;
     this.writeTimeoutMs = writeTimeoutMs;
+    this.snapshotUpdateRecordsPerSnapshot = snapshotUpdateRecordsPerSnapshot;
   }
 }
