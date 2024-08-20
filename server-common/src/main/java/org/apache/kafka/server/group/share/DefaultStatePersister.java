@@ -99,7 +99,7 @@ public class DefaultStatePersister implements Persister {
    * @return WriteShareGroupStateResult
    */
   public CompletableFuture<WriteShareGroupStateResult> writeState(WriteShareGroupStateParameters request) throws IllegalArgumentException {
-    log.info("Write share group state request received");
+    log.debug("Write share group state request received");
     log.debug("Write share group state request dump - {}", request);
     validate(request);
     GroupTopicPartitionData<PartitionStateBatchData> gtp = request.groupTopicPartitionData();
@@ -169,7 +169,7 @@ public class DefaultStatePersister implements Persister {
    * @return ReadShareGroupStateResult
    */
   public CompletableFuture<ReadShareGroupStateResult> readState(ReadShareGroupStateParameters request) throws IllegalArgumentException {
-    log.info("Read share group request received");
+    log.debug("Read share group request received");
     log.debug("Read share group request dump - {}", request);
     validate(request);
     GroupTopicPartitionData<PartitionIdLeaderEpochData> gtp = request.groupTopicPartitionData();

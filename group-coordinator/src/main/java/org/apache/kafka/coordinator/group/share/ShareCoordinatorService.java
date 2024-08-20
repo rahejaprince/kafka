@@ -234,7 +234,7 @@ public class ShareCoordinatorService implements ShareCoordinator {
 
   @Override
   public CompletableFuture<WriteShareGroupStateResponseData> writeState(RequestContext context, WriteShareGroupStateRequestData request) {
-    log.info("ShareCoordinatorService writeState request received");
+    log.debug("ShareCoordinatorService writeState request received");
     log.debug("ShareCoordinatorService writeState request dump - {}", request);
 
     String groupId = request.groupId();
@@ -348,7 +348,7 @@ public class ShareCoordinatorService implements ShareCoordinator {
 
   @Override
   public CompletableFuture<ReadShareGroupStateResponseData> readState(RequestContext context, ReadShareGroupStateRequestData request) {
-    log.info("ShareCoordinatorService readState request received");
+    log.debug("ShareCoordinatorService readState request received");
     log.debug("ShareCoordinatorService readState request dump - {}", request);
 
     String groupId = request.groupId();
