@@ -26,6 +26,7 @@ include 'clients',
     'connect:runtime',
     'connect:test-plugins',
     'connect:transforms',
+    'coordinator-common',
     'core',
     'examples',
     'generator',
@@ -37,6 +38,8 @@ include 'clients',
     'raft',
     'server',
     'server-common',
+    'share',
+    'share-coordinator',
     'shell',
     'storage',
     'storage:api',
@@ -75,3 +78,4 @@ include 'clients',
 
 project(":storage:api").name = "storage-api"
 rootProject.name = 'kafka'
+
