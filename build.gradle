@@ -43,7 +43,6 @@ plugins {
   // includes spotbugs version 4.7.4, in which case CVE-2022-42920 can
   // be dropped from gradle/resources/dependencycheck-suppressions.xml
   id "com.github.spotbugs" version '5.1.3' apply false
-  id 'org.gradle.test-retry' version '1.5.2' apply false
   id 'org.scoverage' version '8.0.3' apply false
   id 'io.github.goooler.shadow' version '8.1.3' apply false
   //  Spotless 6.13.0 has issue with Java 21 (see https://github.com/diffplug/spotless/pull/1920), and Spotless 6.14.0+ requires JRE 11
@@ -292,7 +291,6 @@ subprojects {
 
   apply plugin: 'java-library'
   apply plugin: 'checkstyle'
-  apply plugin: 'org.gradle.test-retry'
   apply plugin: "com.github.spotbugs"
 
   // We use the shadow plugin for the jmh-benchmarks module and the `-all` jar can get pretty large, so
