@@ -1045,12 +1045,12 @@ public class GroupMetadataManager {
     /**
      * Validates the online downgrade if a consumer member is fenced from the consumer group.
      *
-     * @param consumerGroup The ConsumerGroup.
-     * @param memberId      The fenced member id.
+     * @param consumerGroup     The ConsumerGroup.
+     * @param fencedMemberId    The fenced member id.
      * @return A boolean indicating whether it's valid to online downgrade the consumer group.
      */
-    private boolean validateOnlineDowngrade(ConsumerGroup consumerGroup, String memberId) {
-        if (!consumerGroup.allMembersUseClassicProtocolExcept(memberId)) {
+    private boolean validateOnlineDowngradeWithFencedMember(ConsumerGroup consumerGroup, String fencedMemberId) {
+        if (!consumerGroup.allMembersUseClassicProtocolExcept(fencedMemberId)) {
             return false;
         } else if (consumerGroup.numMembers() <= 1) {
             log.debug("Skip downgrading the consumer group {} to classic group because it's empty.",
@@ -1069,26 +1069,60 @@ public class GroupMetadataManager {
     }
 
     /**
+     * Validates whether the group id is eligible for an online downgrade if an existing
+     * static member is replaced by another new one uses the classic protocol.
+     *
+     * @param consumerGroup     The group to downgrade.
+     * @param replacedMemberId  The replaced member id.
+     *
+     * @return A boolean indicating whether it's valid to online downgrade the consumer group.
+     */
+    private boolean validateOnlineDowngradeWithReplacedMemberId(
+        ConsumerGroup consumerGroup,
+        String replacedMemberId
+    ) {
+        if (!consumerGroup.allMembersUseClassicProtocolExcept(replacedMemberId)) {
+            return false;
+        } else if (!consumerGroupMigrationPolicy.isDowngradeEnabled()) {
+            log.info("Cannot downgrade consumer group {} to classic group because the online downgrade is disabled.",
+                consumerGroup.groupId());
+            return false;
+        } else if (consumerGroup.numMembers() > classicGroupMaxSize) {
+            log.info("Cannot downgrade consumer group {} to classic group because its group size is greater than classic group max size.",
+                consumerGroup.groupId());
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Creates a ClassicGroup corresponding to the given ConsumerGroup.
      *
      * @param consumerGroup     The converted ConsumerGroup.
      * @param leavingMemberId   The leaving member that triggers the downgrade validation.
+     * @param joiningMember     The newly joined member if the downgrade is triggered by static member replacement.
      * @param response          The response of the returned CoordinatorResult.
      * @return A CoordinatorResult.
      */
     private <T> CoordinatorResult<T, CoordinatorRecord> convertToClassicGroup(
         ConsumerGroup consumerGroup,
         String leavingMemberId,
+        ConsumerGroupMember joiningMember,
         T response
     ) {
         List<CoordinatorRecord> records = new ArrayList<>();
-        consumerGroup.createGroupTombstoneRecords(records);
+        if (joiningMember == null) {
+            consumerGroup.createGroupTombstoneRecords(records);
+        } else {
+            consumerGroup.createGroupTombstoneRecordsWithReplacedMember(records, leavingMemberId, joiningMember.memberId());
+        }
 
         ClassicGroup classicGroup;
         try {
             classicGroup = ClassicGroup.fromConsumerGroup(
                 consumerGroup,
                 leavingMemberId,
+                joiningMember,
                 logContext,
                 time,
                 metrics,
@@ -1105,13 +1139,16 @@ public class GroupMetadataManager {
 
         // Directly update the states instead of replaying the records because
         // the classicGroup reference is needed for triggering the rebalance.
-        // Set the appendFuture to prevent the records from being replayed.
         removeGroup(consumerGroup.groupId());
         groups.put(consumerGroup.groupId(), classicGroup);
         metrics.onClassicGroupStateTransition(null, classicGroup.currentState());
 
         classicGroup.allMembers().forEach(member -> rescheduleClassicGroupMemberHeartbeat(classicGroup, member));
-        prepareRebalance(classicGroup, String.format("Downgrade group %s from consumer to classic.", classicGroup.groupId()));
+
+        // If the downgrade is triggered by a member leaving the group, a rebalance should be triggered.
+        if (joiningMember == null) {
+            prepareRebalance(classicGroup, String.format("Downgrade group %s from consumer to classic.", classicGroup.groupId()));
+        }
 
         CompletableFuture<Void> appendFuture = new CompletableFuture<>();
         appendFuture.exceptionally(__ -> {
@@ -2038,6 +2075,22 @@ public class GroupMetadataManager {
             records
         );
 
+        // 4. Maybe downgrade the consumer group if the last member using the
+        // consumer protocol is replaced by the joining member.
+        String existingStaticMemberIdOrNull = group.staticMemberId(request.groupInstanceId());
+        boolean isValidDowngrade = existingStaticMemberIdOrNull != null &&
+            validateOnlineDowngradeWithReplacedMemberId(group, existingStaticMemberIdOrNull);
+        if (isValidDowngrade) {
+            records.addAll(
+                convertToClassicGroup(
+                    group,
+                    existingStaticMemberIdOrNull,
+                    updatedMember,
+                    null
+                ).records()
+            );
+        }
+
         final JoinGroupResponseData response = new JoinGroupResponseData()
             .setMemberId(updatedMember.memberId())
             .setGenerationId(updatedMember.memberEpoch())
@@ -2048,15 +2101,16 @@ public class GroupMetadataManager {
         appendFuture.whenComplete((__, t) -> {
             if (t == null) {
                 cancelConsumerGroupJoinTimeout(groupId, response.memberId());
-                scheduleConsumerGroupSessionTimeout(groupId, response.memberId(), sessionTimeoutMs);
-                // The sync timeout ensures that the member send sync request within the rebalance timeout.
-                scheduleConsumerGroupSyncTimeout(groupId, response.memberId(), request.rebalanceTimeoutMs());
-
+                if (!isValidDowngrade) {
+                    scheduleConsumerGroupSessionTimeout(groupId, response.memberId(), sessionTimeoutMs);
+                    // The sync timeout ensures that the member send sync request within the rebalance timeout.
+                    scheduleConsumerGroupSyncTimeout(groupId, response.memberId(), request.rebalanceTimeoutMs());
+                }
                 responseFuture.complete(response);
             }
         });
 
-        return new CoordinatorResult<>(records, null, appendFuture, true);
+        return new CoordinatorResult<>(records, null, appendFuture, !isValidDowngrade);
     }
 
     /**
@@ -2738,8 +2792,8 @@ public class GroupMetadataManager {
         ConsumerGroupMember member,
         T response
     ) {
-        if (validateOnlineDowngrade(group, member.memberId())) {
-            return convertToClassicGroup(group, member.memberId(), response);
+        if (validateOnlineDowngradeWithFencedMember(group, member.memberId())) {
+            return convertToClassicGroup(group, member.memberId(), null, response);
         } else {
             List<CoordinatorRecord> records = new ArrayList<>();
             removeMember(records, group.groupId(), member.memberId());

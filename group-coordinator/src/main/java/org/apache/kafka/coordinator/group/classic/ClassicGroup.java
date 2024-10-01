@@ -40,6 +40,7 @@ import org.apache.kafka.coordinator.group.OffsetExpirationCondition;
 import org.apache.kafka.coordinator.group.OffsetExpirationConditionImpl;
 import org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetricsShard;
 import org.apache.kafka.coordinator.group.modern.consumer.ConsumerGroup;
+import org.apache.kafka.coordinator.group.modern.consumer.ConsumerGroupMember;
 import org.apache.kafka.image.MetadataImage;
 import org.apache.kafka.server.common.MetadataVersion;
 
@@ -1368,6 +1369,7 @@ public class ClassicGroup implements Group {
      *
      * @param consumerGroup                 The converted ConsumerGroup.
      * @param leavingMemberId               The member that will not be converted in the ClassicGroup.
+     * @param joiningMember                 The member that needs to be converted and added to the ClassicGroup.
      * @param logContext                    The logContext to create the ClassicGroup.
      * @param time                          The time to create the ClassicGroup.
      * @param metadataImage                 The MetadataImage.
@@ -1376,6 +1378,7 @@ public class ClassicGroup implements Group {
     public static ClassicGroup fromConsumerGroup(
         ConsumerGroup consumerGroup,
         String leavingMemberId,
+        ConsumerGroupMember joiningMember,
         LogContext logContext,
         Time time,
         GroupCoordinatorMetricsShard metrics,
@@ -1412,15 +1415,38 @@ public class ClassicGroup implements Group {
             }
         });
 
+        if (joiningMember != null) {
+            classicGroup.add(
+                new ClassicGroupMember(
+                    joiningMember.memberId(),
+                    Optional.ofNullable(joiningMember.instanceId()),
+                    joiningMember.clientId(),
+                    joiningMember.clientHost(),
+                    joiningMember.rebalanceTimeoutMs(),
+                    joiningMember.classicProtocolSessionTimeout().get(),
+                    ConsumerProtocol.PROTOCOL_TYPE,
+                    joiningMember.supportedJoinGroupRequestProtocols(),
+                    null
+                )
+            );
+        }
+
         classicGroup.setProtocolName(Optional.of(classicGroup.selectProtocol()));
         classicGroup.setSubscribedTopics(classicGroup.computeSubscribedTopics());
 
         classicGroup.allMembers().forEach(classicGroupMember -> {
             // Set the assignment with serializing the ConsumerGroup's targetAssignment.
             // The serializing version should align with that of the member's JoinGroupRequestProtocol.
+            String memberId = classicGroupMember.memberId();
+            if (joiningMember != null && memberId.equals(joiningMember.memberId())) {
+                // If the downgraded is triggered by the joining member replacing
+                // the leaving member, the joining member should take the assignment
+                // of the leaving one.
+                memberId = leavingMemberId;
+            }
             byte[] assignment = Utils.toArray(ConsumerProtocol.serializeAssignment(
                 toConsumerProtocolAssignment(
-                    consumerGroup.targetAssignment().get(classicGroupMember.memberId()).partitions(),
+                    consumerGroup.targetAssignment().get(memberId).partitions(),
                     metadataImage.topics()
                 ),
                 ConsumerProtocol.deserializeVersion(
@@ -1463,6 +1489,13 @@ public class ClassicGroup implements Group {
                 targetState.validPreviousStates() + " states before moving to " + targetState +
                 " state. Instead it is in " + state + " state.");
         }
+    }
+
+    /**
+     * For testing only.
+     */
+    public void setLeaderId(Optional<String> leaderId) {
+        this.leaderId = leaderId;
     }
 
     @Override
