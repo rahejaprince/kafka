@@ -13,7 +13,7 @@ see [KIP-750](https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=1
 
 Scala 2.13 is the only supported version in Apache Kafka.
 
-### Build a jar and run it ###
+### Build a jar and run it testt###
     ./gradlew jar
 
 Follow instructions in https://kafka.apache.org/quickstart
