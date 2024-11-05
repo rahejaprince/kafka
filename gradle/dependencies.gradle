@@ -100,7 +100,7 @@ versions += [
   commonsCli: "1.4",
   commonsIo: "2.16.0", // ZooKeeper dependency. Do not use, this is going away.
   commonsValidator: "1.7",
-  ccRoleDefinition: "7.8.0-140",
+  ccRoleDefinitions: "7.8.0-140",
   dropwizardMetrics: "4.1.12.1",
   gradle: "8.7",
   grgit: "4.1.1",
